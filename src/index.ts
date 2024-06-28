@@ -9,7 +9,7 @@ import * as a1lib from "alt1";
 import "./index.html";
 import "./appconfig.json";
 import "./icon.png";
-
+import ChatBoxReader from "alt1/chatbox";
 
 var output = document.getElementById("output");
 
@@ -22,45 +22,55 @@ var imgs = a1lib.webpackImages({
 	homeport: require("./homebutton.data.png")
 });
 
-// listen for pasted (ctrl-v) images, usually used in the browser version of an app
-a1lib.PasteInput.listen(img => {
-	findHomeport(img);
-}, (err, errid) => {
-	output.insertAdjacentHTML("beforeend", `<div><b>${errid}</b>  ${err}</div>`);
-});
-
-// You can reach exports on window.TestApp because of
-// library:{type:"umd",name:"TestApp"} in webpack.config.ts
-export function capture() {
-	if (!window.alt1) {
-		output.insertAdjacentHTML("beforeend", `<div>You need to run this page in alt1 to capture the screen</div>`);
-		return;
-	}
-	if (!alt1.permissionPixel) {
-		output.insertAdjacentHTML("beforeend", `<div>Page is not installed as app or capture permission is not enabled</div>`);
-		return;
-	}
-	var img = a1lib.captureHoldFullRs();
-	findHomeport(img);
+const ocr = new ChatBoxReader();
+ocr.readargs = {
+	colors: [
+		a1lib.mixColor(255, 255, 255) // White text
+	]
 }
 
-function findHomeport(img: a1lib.ImgRef) {
-	var loc = img.findSubimage(imgs.homeport);
-	for (let match of loc) {
-		output.insertAdjacentHTML("beforeend", `<div>match at: ${match.x}, ${match.y}</div>`);
+type Colours = { [key: string]: string };
+type Shapes = { [key: string]: string };
 
-		//get the pixel data around the matched area and show them in the output
-		let pixels = img.toData(match.x - 20, match.y - 20, imgs.homeport.width + 40, imgs.homeport.height + 40);
-		output.insertAdjacentElement("beforeend", pixels.toImage());
+const colours: Colours = {
+    "cr": "Crimson", "c": "Crimson",
+    "go": "Gold",
+    "y": "Yellow",
+    "p": "Purple", "pu": "Purple",
+    "s": "Silver", "si": "Silver",
+    "gr": "Green",
+    "o": "Orange", "or": "Orange",
+    "b": "Blue", "bl": "Blue"
+};
 
-		//overlay a rectangle around it on screen if we're running in alt1
-		if (window.alt1) {
-			alt1.overLayRect(a1lib.mixColor(255, 255, 255), match.x, match.y, imgs.homeport.width, imgs.homeport.height, 2000, 3);
-		}
-	}
-	if (loc.length == 0 && window.alt1) {
-		alt1.overLayTextEx("Couldn't find homeport button", a1lib.mixColor(255, 255, 255), 20, Math.round(alt1.rsWidth / 2), 200, 2000, "", true, true);
-	}
+const shapes: Shapes = {
+    "sh": "Shield", "s": "Shield",
+    "co": "Corner", "corn": "Corner",
+    "cr": "Crescent",
+    "w": "Wedge", "we": "Wedge",
+    "d": "Diamond", "di": "Diamond",
+    "t": "Triangle", "tr": "Triangle",
+    "p": "Pentagon",
+    "r": "Rectangle", "re": "Rectangle"
+};
+
+const generatePermutations = (colours: Colours, shapes: Shapes): string[] => {
+    const permutations: string[] = [];
+
+    for (const colourKey in colours) {
+        for (const shapeKey in shapes) {
+            permutations.push(colourKey + shapeKey);
+        }
+    }
+
+    return permutations;
+}
+
+const keyList = generatePermutations(colours, shapes);
+
+function main() {
+    console.log("test");
+    setTimeout(main, 1000);
 }
 
 //check if we are running inside alt1 by checking if the alt1 global exists
@@ -81,3 +91,5 @@ output.insertAdjacentHTML("beforeend", `
 	<div>paste an image of rs with homeport button (or not)</div>
 	<div onclick='TestApp.capture()'>Click to capture if on alt1</div>`
 );
+
+main();
