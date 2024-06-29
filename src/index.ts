@@ -90,36 +90,37 @@ let calledKeys = {};
 let callLocations = {};
 const ignoredMessages = ["thbbbbbt", "logged"];
 
-function findKeyByValue(object, value) {
-  for (const [key, val] of Object.entries(object)) {
-    if (val === value) {
-      return key;
-    }
-  }
-  return null;
+function findKeysByValue(value) {
+  const lowercaseValue = value.toLowerCase();
+  return Object.keys(keyPermutations).filter(
+    (key) => keyPermutations[key].toLowerCase() === lowercaseValue
+  );
 }
 
-function removeKeyFromCalledKeys(keyToRemove) {
+function removeKeysFromCalledKeys(keysToRemove) {
   console.log("Original data:", JSON.stringify(calledKeys));
+  console.log("Keys to remove:", keysToRemove);
 
   Object.keys(calledKeys).forEach((caller) => {
     calledKeys[caller].forEach((item, index) => {
-      // Log the current item before modification
       console.log(
         `Before modification (Caller: ${caller}, Item ${index}):`,
-        item
+        JSON.stringify(item)
       );
 
-      // Filter out 'keyToRemove' from the 'keys' array
-      item.keys = item.keys.filter((key) => key !== keyToRemove);
+      const originalLength = item.keys.length;
+      item.keys = item.keys.filter((key) => !keysToRemove.includes(key));
+      const newLength = item.keys.length;
 
-      // Log the current item after modification
       console.log(
         `After modification (Caller: ${caller}, Item ${index}):`,
-        item
+        JSON.stringify(item)
       );
+      console.log(`Keys removed: ${originalLength - newLength}`);
     });
   });
+
+  console.log("Final data:", JSON.stringify(calledKeys));
   updateDisplay(output, calledKeys);
 }
 
@@ -158,14 +159,17 @@ function readChatbox() {
         continue;
       }
 
+      let test = findKeysByValue("blue shield");
+      console.log("sdfsdfsdfsfd", test);
+
       if (lineText.includes("found a key")) {
         const foundKey = keysFullNames.find((key) =>
           lineText.includes(key.toLowerCase())
         );
-        const key = findKeyByValue(keyPermutations, foundKey);
+        const key = findKeysByValue(foundKey);
         console.log("KEY FOUND", key);
-        if (key) {
-          foundKeys[key] = keyPermutations[key];
+        if (key.length) {
+          foundKeys[key[0]] = keyPermutations[key[0]];
           console.log("wwwwwwwwwwwwwww", foundKeys);
           updateDisplay(output, calledKeys);
         }
@@ -176,12 +180,11 @@ function readChatbox() {
         const foundKey = keysFullNames.find((key) =>
           lineText.includes(key.toLowerCase())
         );
-        const key = findKeyByValue(keyPermutations, foundKey);
-        if (key) {
-          usedKeys[key] = keyPermutations[key];
+        const keys = findKeysByValue(foundKey);
+        if (keys.length > 0) {
+          usedKeys[keys[0]] = keyPermutations[keys[0]];
           console.log("gggggggggggg", usedKeys);
-          removeKeyFromCalledKeys("bs");
-          //   removeKeyFromCalledKeys(key);
+          removeKeysFromCalledKeys(keys);
           updateDisplay(output, calledKeys);
         }
         continue;
@@ -241,7 +244,6 @@ function updateDisplay(container, calledKeys) {
 
   container.innerHTML = "";
 
-  // Loop through each caller in foundKeys
   Object.keys(calledKeys).forEach((caller) => {
     const callerDiv = document.createElement("div");
     callerDiv.className = "caller-section";
@@ -252,7 +254,6 @@ function updateDisplay(container, calledKeys) {
 
     const uniqueLocations = new Map();
 
-    // Loop through each entry for the caller in reverse order
     for (let i = calledKeys[caller].length - 1; i >= 0; i--) {
       const entry = calledKeys[caller][i];
       if (!uniqueLocations.has(entry.location)) {
@@ -260,43 +261,42 @@ function updateDisplay(container, calledKeys) {
       }
     }
 
-    // Create div elements from the uniqueLocations map
     uniqueLocations.forEach((entry) => {
-      const locationDiv = document.createElement("div");
-      locationDiv.className = "location-item";
-      locationDiv.textContent = `${entry.location}`;
+      // Only create and append the location if it has keys
+      if (entry.keys.length > 0) {
+        const locationDiv = document.createElement("div");
+        locationDiv.className = "location-item";
+        locationDiv.textContent = `${entry.location}`;
 
-      const keysDiv = document.createElement("div");
-      keysDiv.style.display = "flex"; // Use flex to display images horizontally
+        const keysDiv = document.createElement("div");
+        keysDiv.style.display = "flex";
 
-      // Loop through each key in the entry.keys array
-      entry.keys.forEach((key) => {
-        const keyItem = document.createElement("div");
-        keyItem.style.marginRight = "10px"; // Add some space between images
+        entry.keys.forEach((key) => {
+          const keyItem = document.createElement("div");
+          keyItem.style.marginRight = "10px";
 
-        // Check if the key value is in keyPermutations to get the corresponding image
-        if (keyPermutations[key]) {
-          const imgPath = `./key_images/${keyPermutations[key].replace(
-            / /g,
-            "_"
-          )}.png`;
-          const imgElement = document.createElement("img");
-          imgElement.src = imgPath;
-          imgElement.alt = keyPermutations[key];
-          keyItem.appendChild(imgElement); // Append image to the key item
-        }
+          if (keyPermutations[key]) {
+            const imgPath = `./key_images/${keyPermutations[key].replace(
+              / /g,
+              "_"
+            )}.png`;
+            const imgElement = document.createElement("img");
+            imgElement.src = imgPath;
+            imgElement.alt = keyPermutations[key];
+            keyItem.appendChild(imgElement);
+          }
 
-        keysDiv.appendChild(keyItem);
-      });
+          keysDiv.appendChild(keyItem);
+        });
 
-      locationDiv.appendChild(keysDiv);
-      callerDiv.appendChild(locationDiv);
+        locationDiv.appendChild(keysDiv);
+        callerDiv.appendChild(locationDiv);
+      }
     });
 
     container.appendChild(callerDiv);
   });
 }
-
 function main() {
   readChatbox();
 }
