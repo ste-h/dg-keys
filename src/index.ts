@@ -98,13 +98,22 @@ function appendKeysToPreviousCall(caller: string, keysToAppend: string[]) {
 }
 
 function resetDaemonheimState() {
+  const currentTime = Date.now();
+  const cooldownPeriod = 30000;
+
+  if (currentTime - lastFloorStartTime < cooldownPeriod) {
+    console.log("Cooldown active. Skipping reset.");
+    return;
+  }
+
   foundKeys = [];
   usedKeys = [];
   calledKeys = {};
   callLocations = {};
-  lastFloorStartTime = Date.now();
+  lastFloorStartTime = currentTime;
   updateDisplay(output, calledKeys);
 }
+
 function findKeysByValue(value) {
   const lowercaseValue = value.toLowerCase();
   return Object.keys(keyPermutations).filter(
@@ -113,29 +122,14 @@ function findKeysByValue(value) {
 }
 
 function removeKeysFromCalledKeys(keysToRemove) {
-  console.log("Original data:", JSON.stringify(calledKeys));
-  console.log("Keys to remove:", keysToRemove);
-
   Object.keys(calledKeys).forEach((caller) => {
     calledKeys[caller].forEach((item, index) => {
-      console.log(
-        `Before modification (Caller: ${caller}, Item ${index}):`,
-        JSON.stringify(item)
-      );
-
       const originalLength = item.keys.length;
       item.keys = item.keys.filter((key) => !keysToRemove.includes(key));
       const newLength = item.keys.length;
-
-      console.log(
-        `After modification (Caller: ${caller}, Item ${index}):`,
-        JSON.stringify(item)
-      );
-      console.log(`Keys removed: ${originalLength - newLength}`);
     });
   });
 
-  console.log("Final data:", JSON.stringify(calledKeys));
   updateDisplay(output, calledKeys);
 }
 
@@ -155,7 +149,6 @@ function processLine(lineText: string) {
     const key = findKeysByValue(foundKey);
     if (key.length) {
       foundKeys[key[0]] = keyPermutations[key[0]];
-      console.log("KEYS FOUND", foundKeys);
       updateDisplay(output, calledKeys);
     }
     return;
@@ -168,7 +161,6 @@ function processLine(lineText: string) {
     const keys = findKeysByValue(foundKey);
     if (keys.length > 0) {
       usedKeys[keys[0]] = keyPermutations[keys[0]];
-      console.log("USED KEYS", usedKeys);
       removeKeysFromCalledKeys(keys);
       updateDisplay(output, calledKeys);
     }
@@ -194,7 +186,6 @@ function processLine(lineText: string) {
     // Filter used keys
     keysCalled = keysCalled.filter((key) => !usedKeys.includes(key));
 
-	
     // Append keys to the previous call
     if (message.startsWith("+")) {
       appendKeysToPreviousCall(caller, keysCalled);
@@ -229,7 +220,6 @@ function processLine(lineText: string) {
   }
 
   updateDisplay(output, calledKeys);
-  console.log("called keys", calledKeys);
 }
 
 function readChatbox() {
@@ -253,21 +243,18 @@ function readChatbox() {
       return;
     }
 
-    console.log("LINES NO SLICE", lines);
-
     for (let line of lines) {
       console.log("detected text", line.text);
       let lineText = line.text.toLocaleLowerCase();
 
-      // Slightly jank when the whole chatbox is re-processed sometimes
-      // Needs more testing, might be fine in practice
-      if (lineText.includes("welcome to daemonheim")) {
+      // Slightly jank when the whole chatbox is re-processed at times
+      // There's a 30 second cooldown on resetting a floor to avoid some unintended resets
+	  // Resets on new floor message or 3 ='s in a row
+      if (/welcome to daemonheim|={3,}/.test(lineText)) {
         resetDaemonheimState();
       } else {
         processLine(lineText);
       }
-
-      console.log("line text", lineText);
     }
   }, alt1.captureInterval);
 }
