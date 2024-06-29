@@ -66,18 +66,12 @@ function generateKeyPermutations(colours: Colours, shapes: Shapes) {
 }
 
 const keyPermutations = generateKeyPermutations(colours, shapes);
+keyPermutations["dead"] = "Dead";
+
 console.log(keyPermutations);
 
 const reader = new ChatBoxReader();
 
-// reader.readargs = {
-// 	colors: [
-// 		// a1lib.mixColor(255, 255, 255), // White
-// 		a1lib.mixColor(127, 169, 255), // Public chat blue
-// 		a1lib.mixColor(165, 65, 20), // Found/used keys
-
-// 		]
-// 	}
 reader.readargs.colors.push(
   a1lib.mixColor(165, 65, 20) // Found/used keys color
 );
@@ -91,15 +85,26 @@ let usedKeys = [];
 let calledKeys = {};
 let callLocations = {};
 const ignoredMessages = ["thbbbbbt", "logged"];
+let lastFloorStartTime = 0;
+
+function appendKeysToPreviousCall(caller: string, keysToAppend: string[]) {
+  if (calledKeys[caller] && calledKeys[caller].length > 0) {
+    const lastCall = calledKeys[caller][calledKeys[caller].length - 1];
+    lastCall.keys = lastCall.keys
+      .concat(keysToAppend)
+      .filter((key, index, self) => self.indexOf(key) === index);
+    updateDisplay(output, calledKeys);
+  }
+}
 
 function resetDaemonheimState() {
   foundKeys = [];
   usedKeys = [];
   calledKeys = {};
   callLocations = {};
+  lastFloorStartTime = Date.now();
   updateDisplay(output, calledKeys);
 }
-
 function findKeysByValue(value) {
   const lowercaseValue = value.toLowerCase();
   return Object.keys(keyPermutations).filter(
@@ -181,7 +186,7 @@ function processLine(lineText: string) {
   // Matches everything after username
   let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
   let match = lineText.match(regex);
-  let location = match ? match[1].trim() : "";
+  let message = match ? match[1].trim() : "";
 
   let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
 
@@ -189,33 +194,43 @@ function processLine(lineText: string) {
     // Filter used keys
     keysCalled = keysCalled.filter((key) => !usedKeys.includes(key));
 
-    // Remove called keys from the location
-    keysCalled.forEach((key) => {
-      let keyRegex = new RegExp(key, "gi");
-      location = location.replace(keyRegex, "").trim();
-    });
+	
+    // Append keys to the previous call
+    if (message.startsWith("+")) {
+      appendKeysToPreviousCall(caller, keysCalled);
+    } else {
+      // Remove called keys from the location
+      keysCalled.forEach((key) => {
+        let keyRegex = new RegExp(key, "gi");
+        message = message.replace(keyRegex, "").trim();
+      });
 
-    if (!calledKeys[caller]) {
-      calledKeys[caller] = [];
-    }
+      if (!calledKeys[caller]) {
+        calledKeys[caller] = [];
+      }
 
-    // Don't add duplicates
-    let existingEntry = calledKeys[caller].find(
-      (entry) =>
-        entry.location === location &&
-        JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
-    );
-
-    if (!existingEntry) {
-      calledKeys[caller].push({ location: location, keys: keysCalled });
+      // Don't add duplicates
+      let currentTime = Date.now();
+      if (currentTime > lastFloorStartTime) {
+        let existingEntry = calledKeys[caller].find(
+          (entry) =>
+            entry.location === message &&
+            JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
+        );
+        if (!existingEntry) {
+          calledKeys[caller].push({
+            location: message,
+            keys: keysCalled,
+            timestamp: currentTime,
+          });
+        }
+      }
     }
   }
 
   updateDisplay(output, calledKeys);
   console.log("called keys", calledKeys);
 }
-
-let processMessages = true;
 
 function readChatbox() {
   if (!window.alt1) {
@@ -240,21 +255,17 @@ function readChatbox() {
 
     console.log("LINES NO SLICE", lines);
 
-    const newFloorIndex = lines.findIndex((line) =>
-      line.text.includes("Welcome to Daemonheim")
-    );
-
-    if (newFloorIndex !== -1) {
-      resetDaemonheimState();
-      lines = lines.slice(newFloorIndex);
-    }
-
-    console.log("LINES POST SLICE", lines);
-
     for (let line of lines) {
       console.log("detected text", line.text);
       let lineText = line.text.toLocaleLowerCase();
-      processLine(lineText);
+
+      // Slightly jank when the whole chatbox is re-processed sometimes
+      // Needs more testing, might be fine in practice
+      if (lineText.includes("welcome to daemonheim")) {
+        resetDaemonheimState();
+      } else {
+        processLine(lineText);
+      }
 
       console.log("line text", lineText);
     }
@@ -284,7 +295,7 @@ function updateDisplay(container, calledKeys) {
     }
 
     uniqueLocations.forEach((entry) => {
-      if (entry.keys.length > 0) {
+      if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
         const locationDiv = document.createElement("div");
         locationDiv.className = "location-item";
         locationDiv.textContent = `${entry.location}`;
@@ -297,10 +308,15 @@ function updateDisplay(container, calledKeys) {
           keyItem.className = "key-item";
 
           if (keyPermutations[key]) {
-            const imgPath = `./key_images/${keyPermutations[key].replace(
-              / /g,
-              "_"
-            )}.png`;
+            let imgPath;
+            if (key === "dead") {
+              imgPath = "./key_images/Skull.png";
+            } else {
+              imgPath = `./key_images/${keyPermutations[key].replace(
+                / /g,
+                "_"
+              )}.png`;
+            }
             const imgElement = document.createElement("img");
             imgElement.src = imgPath;
             imgElement.alt = keyPermutations[key];
