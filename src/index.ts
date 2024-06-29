@@ -44,6 +44,8 @@ const shapes: Shapes = {
   di: "Diamond",
   t: "Triangle",
   tr: "Triangle",
+  tri: "Triangle",
+  // add tri
   p: "Pentagon",
   r: "Rectangle",
   re: "Rectangle",
@@ -90,6 +92,14 @@ let calledKeys = {};
 let callLocations = {};
 const ignoredMessages = ["thbbbbbt", "logged"];
 
+function resetDaemonheimState() {
+  foundKeys = [];
+  usedKeys = [];
+  calledKeys = {};
+  callLocations = {};
+  updateDisplay(output, calledKeys);
+}
+
 function findKeysByValue(value) {
   const lowercaseValue = value.toLowerCase();
   return Object.keys(keyPermutations).filter(
@@ -124,6 +134,89 @@ function removeKeysFromCalledKeys(keysToRemove) {
   updateDisplay(output, calledKeys);
 }
 
+function processLine(lineText: string) {
+  if (
+    ignoredMessages.some((ignored) =>
+      lineText.includes(ignored.toLocaleLowerCase())
+    )
+  ) {
+    return;
+  }
+
+  if (lineText.includes("found a key")) {
+    const foundKey = keysFullNames.find((key) =>
+      lineText.includes(key.toLowerCase())
+    );
+    const key = findKeysByValue(foundKey);
+    if (key.length) {
+      foundKeys[key[0]] = keyPermutations[key[0]];
+      console.log("KEYS FOUND", foundKeys);
+      updateDisplay(output, calledKeys);
+    }
+    return;
+  }
+
+  if (lineText.includes("used a key")) {
+    const foundKey = keysFullNames.find((key) =>
+      lineText.includes(key.toLowerCase())
+    );
+    const keys = findKeysByValue(foundKey);
+    if (keys.length > 0) {
+      usedKeys[keys[0]] = keyPermutations[keys[0]];
+      console.log("USED KEYS", usedKeys);
+      removeKeysFromCalledKeys(keys);
+      updateDisplay(output, calledKeys);
+    }
+    return;
+  }
+
+  let caller = keyCallerUsernames.find((username) =>
+    lineText.includes(username.toLocaleLowerCase())
+  );
+
+  if (!caller) {
+    return;
+  }
+
+  // Matches everything after username
+  let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
+  let match = lineText.match(regex);
+  let location = match ? match[1].trim() : "";
+
+  let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
+
+  if (keysCalled.length > 0) {
+    // Filter used keys
+    keysCalled = keysCalled.filter((key) => !usedKeys.includes(key));
+
+    // Remove called keys from the location
+    keysCalled.forEach((key) => {
+      let keyRegex = new RegExp(key, "gi");
+      location = location.replace(keyRegex, "").trim();
+    });
+
+    if (!calledKeys[caller]) {
+      calledKeys[caller] = [];
+    }
+
+    // Don't add duplicates
+    let existingEntry = calledKeys[caller].find(
+      (entry) =>
+        entry.location === location &&
+        JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
+    );
+
+    if (!existingEntry) {
+      calledKeys[caller].push({ location: location, keys: keysCalled });
+    }
+  }
+
+  updateDisplay(output, calledKeys);
+  console.log("called keys", calledKeys);
+}
+
+let processMessages = true;
+
 function readChatbox() {
   if (!window.alt1) {
     console.log("Alt1 not detected");
@@ -145,96 +238,25 @@ function readChatbox() {
       return;
     }
 
+    console.log("LINES NO SLICE", lines);
+
+    const newFloorIndex = lines.findIndex((line) =>
+      line.text.includes("Welcome to Daemonheim")
+    );
+
+    if (newFloorIndex !== -1) {
+      resetDaemonheimState();
+      lines = lines.slice(newFloorIndex);
+    }
+
+    console.log("LINES POST SLICE", lines);
+
     for (let line of lines) {
       console.log("detected text", line.text);
       let lineText = line.text.toLocaleLowerCase();
+      processLine(lineText);
 
       console.log("line text", lineText);
-
-      if (
-        ignoredMessages.some((ignored) =>
-          lineText.includes(ignored.toLocaleLowerCase())
-        )
-      ) {
-        continue;
-      }
-
-      let test = findKeysByValue("blue shield");
-      console.log("sdfsdfsdfsfd", test);
-
-      if (lineText.includes("found a key")) {
-        const foundKey = keysFullNames.find((key) =>
-          lineText.includes(key.toLowerCase())
-        );
-        const key = findKeysByValue(foundKey);
-        console.log("KEY FOUND", key);
-        if (key.length) {
-          foundKeys[key[0]] = keyPermutations[key[0]];
-          console.log("wwwwwwwwwwwwwww", foundKeys);
-          updateDisplay(output, calledKeys);
-        }
-        continue;
-      }
-
-      if (lineText.includes("used a key")) {
-        const foundKey = keysFullNames.find((key) =>
-          lineText.includes(key.toLowerCase())
-        );
-        const keys = findKeysByValue(foundKey);
-        if (keys.length > 0) {
-          usedKeys[keys[0]] = keyPermutations[keys[0]];
-          console.log("gggggggggggg", usedKeys);
-          removeKeysFromCalledKeys(keys);
-          updateDisplay(output, calledKeys);
-        }
-        continue;
-      }
-
-      let caller = keyCallerUsernames.find((username) =>
-        lineText.includes(username.toLocaleLowerCase())
-      );
-
-      if (!caller) {
-        continue;
-      }
-
-      // Matches everything after username
-      let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
-      let match = lineText.match(regex);
-      let location = match ? match[1].trim() : "";
-
-      let keysCalled = keys.filter((key) =>
-        lineText.split(/\s+/).includes(key)
-      );
-
-      if (keysCalled.length > 0) {
-        // Filter used keys
-        keysCalled = keysCalled.filter((key) => !usedKeys.includes(key));
-
-        // Remove called keys from the location
-        keysCalled.forEach((key) => {
-          let keyRegex = new RegExp(key, "gi");
-          location = location.replace(keyRegex, "").trim();
-        });
-
-        if (!calledKeys[caller]) {
-          calledKeys[caller] = [];
-        }
-
-        // Don't add duplicates
-        let existingEntry = calledKeys[caller].find(
-          (entry) =>
-            entry.location === location &&
-            JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
-        );
-
-        if (!existingEntry) {
-          calledKeys[caller].push({ location: location, keys: keysCalled });
-        }
-      }
-
-      updateDisplay(output, calledKeys);
-      console.log("called keys", calledKeys);
     }
   }, alt1.captureInterval);
 }
@@ -283,9 +305,12 @@ function updateDisplay(container, calledKeys) {
             imgElement.src = imgPath;
             imgElement.alt = keyPermutations[key];
 
-            // Check if the key is both found and called
-            if (Object.keys(foundKeys).includes(key)) {
+            // Check if the key is found, regardless of location
+            if (foundKeys[key]) {
+              console.log(`Adding glow to ${key}`);
               imgElement.classList.add("key-glow");
+            } else {
+              console.log(`No glow for ${key}. foundKeys:`, foundKeys);
             }
 
             keyItem.appendChild(imgElement);
