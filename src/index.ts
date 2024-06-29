@@ -262,18 +262,17 @@ function updateDisplay(container, calledKeys) {
     }
 
     uniqueLocations.forEach((entry) => {
-      // Only create and append the location if it has keys
       if (entry.keys.length > 0) {
         const locationDiv = document.createElement("div");
         locationDiv.className = "location-item";
         locationDiv.textContent = `${entry.location}`;
 
         const keysDiv = document.createElement("div");
-        keysDiv.style.display = "flex";
+        keysDiv.className = "keys-container";
 
         entry.keys.forEach((key) => {
           const keyItem = document.createElement("div");
-          keyItem.style.marginRight = "10px";
+          keyItem.className = "key-item";
 
           if (keyPermutations[key]) {
             const imgPath = `./key_images/${keyPermutations[key].replace(
@@ -283,6 +282,12 @@ function updateDisplay(container, calledKeys) {
             const imgElement = document.createElement("img");
             imgElement.src = imgPath;
             imgElement.alt = keyPermutations[key];
+
+            // Check if the key is both found and called
+            if (Object.keys(foundKeys).includes(key)) {
+              imgElement.classList.add("key-glow");
+            }
+
             keyItem.appendChild(imgElement);
           }
 
@@ -297,6 +302,7 @@ function updateDisplay(container, calledKeys) {
     container.appendChild(callerDiv);
   });
 }
+
 function main() {
   readChatbox();
 }
