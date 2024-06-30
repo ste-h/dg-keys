@@ -4212,6 +4212,8 @@ function removeKeysFromCalledKeys(keysToRemove) {
     updateDisplay(output, calledKeys);
 }
 function processLine(lineText) {
+    // Remove single quotes from the line
+    lineText = lineText.replace(/'/g, "").toLowerCase();
     if (ignoredMessages.some(function (ignored) {
         return lineText.includes(ignored.toLocaleLowerCase());
     })) {
@@ -4329,7 +4331,9 @@ function readChatbox() {
         for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
             var line = lines_1[_i];
             console.log("detected text", line.text);
-            var lineText = line.text.toLowerCase();
+            // Remove single quotes
+            var lineText = line.text.replace(/'/g, "").toLowerCase();
+            console.log("single quotes removed", lineText);
             // Can also reset with ='s
             if (/={3,}/.test(lineText)) {
                 resetDaemonheimState();
