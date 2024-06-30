@@ -167,25 +167,13 @@ function removeKeysFromCalledKeys(keysToRemove) {
 function processLine(lineText: string) {
   // Remove single quotes from the line
   lineText = lineText.replace(/'/g, "").toLowerCase();
-  
+
   // Matches everything after username
   let caller = keyCallerUsernames.find((username) =>
     lineText.includes(username.toLocaleLowerCase())
   );
 
   if (!caller) {
-    return;
-  }
-
-  let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
-  let match = lineText.match(regex);
-  let message = match ? match[1].trim() : "";
-
-  if (
-    ignoredMessages.some((ignored) =>
-      lineText.includes(ignored.toLocaleLowerCase())
-    )
-  ) {
     return;
   }
 
@@ -208,14 +196,27 @@ function processLine(lineText: string) {
       lineText.includes(key.toLowerCase())
     );
     const keys = findKeysByValue(foundKey);
-    if (keys.length > 0) {
-      usedKeys[keys[0]] = keyPermutations[keys[0]];
+    if (keys.length) {
+      keys.forEach((k) => {
+        usedKeys[k] = keyPermutations[k];
+      });
       removeKeysFromCalledKeys(keys);
       updateDisplay(output, calledKeys);
     }
     return;
   }
 
+  let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
+  let match = lineText.match(regex);
+  let message = match ? match[1].trim() : "";
+
+  if (
+    ignoredMessages.some((ignored) =>
+      lineText.includes(ignored.toLocaleLowerCase())
+    )
+  ) {
+    return;
+  }
 
   let shouldAppendToPreviousCall = false;
   if (message.startsWith("+")) {
@@ -312,7 +313,6 @@ function readChatbox() {
       console.log("detected text", line.text);
       // Remove single quotes
       let lineText = line.text.replace(/'/g, "").toLowerCase();
-      console.log("single quotes removed", lineText);
 
       // Can also reset with ='s
       if (/={3,}/.test(lineText)) {

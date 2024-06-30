@@ -4222,14 +4222,6 @@ function processLine(lineText) {
     if (!caller) {
         return;
     }
-    var regex = new RegExp("".concat(caller.toLocaleLowerCase(), ":(.*)"), "i");
-    var match = lineText.match(regex);
-    var message = match ? match[1].trim() : "";
-    if (ignoredMessages.some(function (ignored) {
-        return lineText.includes(ignored.toLocaleLowerCase());
-    })) {
-        return;
-    }
     if (lineText.includes("found a key")) {
         var foundKey = keysFullNames.find(function (key) {
             return lineText.includes(key.toLowerCase());
@@ -4248,11 +4240,21 @@ function processLine(lineText) {
             return lineText.includes(key.toLowerCase());
         });
         var keys_1 = findKeysByValue(foundKey);
-        if (keys_1.length > 0) {
-            usedKeys[keys_1[0]] = keyPermutations[keys_1[0]];
+        if (keys_1.length) {
+            keys_1.forEach(function (k) {
+                usedKeys[k] = keyPermutations[k];
+            });
             removeKeysFromCalledKeys(keys_1);
             updateDisplay(output, calledKeys);
         }
+        return;
+    }
+    var regex = new RegExp("".concat(caller.toLocaleLowerCase(), ":(.*)"), "i");
+    var match = lineText.match(regex);
+    var message = match ? match[1].trim() : "";
+    if (ignoredMessages.some(function (ignored) {
+        return lineText.includes(ignored.toLocaleLowerCase());
+    })) {
         return;
     }
     var shouldAppendToPreviousCall = false;
@@ -4339,7 +4341,6 @@ function readChatbox() {
             console.log("detected text", line.text);
             // Remove single quotes
             var lineText = line.text.replace(/'/g, "").toLowerCase();
-            console.log("single quotes removed", lineText);
             // Can also reset with ='s
             if (/={3,}/.test(lineText)) {
                 resetDaemonheimState();
