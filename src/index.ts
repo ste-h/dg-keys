@@ -51,6 +51,14 @@ const shapes: Shapes = {
   re: "Rectangle",
 };
 
+function capitalizeWords(str) {
+    const words = str.split(" ");
+    for (let i = 0; i < words.length; i++) {
+        words[i] = words[i][0].toUpperCase() + words[i].slice(1);
+    }
+    return words.join(" ");
+}
+
 function generateKeyPermutations(colours: Colours, shapes: Shapes) {
   const permutations: { [key: string]: string } = {};
 
@@ -186,42 +194,49 @@ function processLine(lineText: string) {
 
   if (keysCalled.length > 0) {
     // Filter used keys
-    keysCalled = keysCalled.filter((key) => !usedKeys.includes(key));
+    let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
 
-    // Append keys to the previous call
-    if (message.startsWith("+")) {
-      appendKeysToPreviousCall(caller, keysCalled);
-    } else {
-      // Remove called keys from the location
-      keysCalled.forEach((key) => {
-        let keyRegex = new RegExp(key, "gi");
-        message = message.replace(keyRegex, "").trim();
-      });
+    if (keysCalled.length > 0) {
+      // Filter out keys that are in usedKeys
+      keysCalled = keysCalled.filter((key) => !usedKeys.hasOwnProperty(key));
 
-      if (!calledKeys[caller]) {
-        calledKeys[caller] = [];
-      }
-
-      // Don't add duplicates
-      let currentTime = Date.now();
-      if (currentTime > lastFloorStartTime) {
-        let existingEntry = calledKeys[caller].find(
-          (entry) =>
-            entry.location === message &&
-            JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
-        );
-        if (!existingEntry) {
-          calledKeys[caller].push({
-            location: message,
-            keys: keysCalled,
-            timestamp: currentTime,
+      if (keysCalled.length > 0) {
+        // Only proceed if there are still keys after filtering
+        // Append keys to the previous call
+        if (message.startsWith("+")) {
+          appendKeysToPreviousCall(caller, keysCalled);
+        } else {
+          // Remove called keys from the location
+          keysCalled.forEach((key) => {
+            let keyRegex = new RegExp(key, "gi");
+            message = message.replace(keyRegex, "").trim();
           });
+
+          if (!calledKeys[caller]) {
+            calledKeys[caller] = [];
+          }
+
+          // Don't add duplicates
+          let currentTime = Date.now();
+          if (currentTime > lastFloorStartTime) {
+            let existingEntry = calledKeys[caller].find(
+              (entry) =>
+                entry.location === message &&
+                JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
+            );
+            if (!existingEntry) {
+              calledKeys[caller].push({
+                location: message,
+                keys: keysCalled,
+                timestamp: currentTime,
+              });
+            }
+          }
         }
       }
     }
+    updateDisplay(output, calledKeys);
   }
-
-  updateDisplay(output, calledKeys);
 }
 
 function readChatbox() {
@@ -271,6 +286,7 @@ function updateDisplay(container, calledKeys) {
     callerDiv.className = "caller-section";
 
     const callerTitle = document.createElement("h2");
+	callerTitle.className = "caller-name";
     callerTitle.textContent = caller;
     callerDiv.appendChild(callerTitle);
 
@@ -285,18 +301,19 @@ function updateDisplay(container, calledKeys) {
 
     uniqueLocations.forEach((entry) => {
       if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
-        const locationDiv = document.createElement("div");
-        locationDiv.className = "location-item";
-        locationDiv.textContent = `${entry.location}`;
+        const locationItem = document.createElement("div");
+        locationItem.className = "location-item";
 
-        const keysDiv = document.createElement("div");
-        keysDiv.className = "keys-container";
+        const locationText = document.createElement("span");
+        locationText.textContent = `${capitalizeWords(entry.location)} `;
+        locationItem.appendChild(locationText);
+
+        const keysList = document.createElement("ul");
 
         entry.keys.forEach((key) => {
-          const keyItem = document.createElement("div");
-          keyItem.className = "key-item";
-
           if (keyPermutations[key]) {
+            const keyItem = document.createElement("li");
+
             let imgPath;
             if (key === "dead") {
               imgPath = "./key_images/Skull.png";
@@ -310,29 +327,23 @@ function updateDisplay(container, calledKeys) {
             imgElement.src = imgPath;
             imgElement.alt = keyPermutations[key];
 
-            // Check if the key is found, regardless of location
             if (foundKeys[key]) {
-              console.log(`Adding glow to ${key}`);
               imgElement.classList.add("key-glow");
-            } else {
-              console.log(`No glow for ${key}. foundKeys:`, foundKeys);
             }
 
             keyItem.appendChild(imgElement);
+            keysList.appendChild(keyItem);
           }
-
-          keysDiv.appendChild(keyItem);
         });
 
-        locationDiv.appendChild(keysDiv);
-        callerDiv.appendChild(locationDiv);
+        locationItem.appendChild(keysList);
+        callerDiv.appendChild(locationItem);
       }
     });
 
     container.appendChild(callerDiv);
   });
 }
-
 function main() {
   readChatbox();
 }
