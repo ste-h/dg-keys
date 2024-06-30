@@ -52,11 +52,11 @@ const shapes: Shapes = {
 };
 
 function capitalizeWords(str) {
-    const words = str.split(" ");
-    for (let i = 0; i < words.length; i++) {
-        words[i] = words[i][0].toUpperCase() + words[i].slice(1);
-    }
-    return words.join(" ");
+  const words = str.split(" ");
+  for (let i = 0; i < words.length; i++) {
+    words[i] = words[i][0].toUpperCase() + words[i].slice(1);
+  }
+  return words.join(" ");
 }
 
 function generateKeyPermutations(colours: Colours, shapes: Shapes) {
@@ -87,7 +87,7 @@ reader.readargs.colors.push(
 const keys = Object.keys(keyPermutations);
 const keysFullNames = Object.values(keyPermutations);
 
-let keyCallerUsernames = ["Fe Nechs", "Fe Conor"];
+let keyCallerUsernames = ["Fe Nechs", "Fe Conor", "Bazz21", "Lidica"];
 let foundKeys = [];
 let usedKeys = [];
 let calledKeys = {};
@@ -276,6 +276,23 @@ function readChatbox() {
   }, alt1.captureInterval);
 }
 
+let selectedUsername = "";
+
+function populateUsernameDropdown() {
+	const select = document.getElementById("usernameSelect");
+	keyCallerUsernames.forEach(username => {
+	  const option = document.createElement("option");
+	  option.value = username;
+	  option.textContent = username;
+	  select.appendChild(option);
+	});
+  
+	select.addEventListener("change", (event) => {
+	  selectedUsername = event.target.value;
+	  updateDisplay(output, calledKeys);
+	});
+  }
+  
 function updateDisplay(container, calledKeys) {
   if (!container) return;
 
@@ -286,7 +303,7 @@ function updateDisplay(container, calledKeys) {
     callerDiv.className = "caller-section";
 
     const callerTitle = document.createElement("h2");
-	callerTitle.className = "caller-name";
+    callerTitle.className = "caller-name";
     callerTitle.textContent = caller;
     callerDiv.appendChild(callerTitle);
 
@@ -305,15 +322,23 @@ function updateDisplay(container, calledKeys) {
         locationItem.className = "location-item";
 
         const locationText = document.createElement("span");
-        locationText.textContent = `${capitalizeWords(entry.location)} `;
+        locationText.className = "location-text";
+        locationText.textContent = capitalizeWords(entry.location);
         locationItem.appendChild(locationText);
 
+        const iconsContainer = document.createElement("div");
+        iconsContainer.className = "icons-container";
+
         const keysList = document.createElement("ul");
+        keysList.className = "keys-list";
 
         entry.keys.forEach((key) => {
           if (keyPermutations[key]) {
             const keyItem = document.createElement("li");
 
+			const keyContainer = document.createElement("div");
+			keyContainer.className = "key-container";
+		
             let imgPath;
             if (key === "dead") {
               imgPath = "./key_images/Skull.png";
@@ -328,15 +353,17 @@ function updateDisplay(container, calledKeys) {
             imgElement.alt = keyPermutations[key];
 
             if (foundKeys[key]) {
-              imgElement.classList.add("key-glow");
+              keyContainer.classList.add("key-glow");
             }
 
-            keyItem.appendChild(imgElement);
-            keysList.appendChild(keyItem);
-          }
+			keyContainer.appendChild(imgElement);
+			keyItem.appendChild(keyContainer);
+			keysList.appendChild(keyItem);
+				  }
         });
 
-        locationItem.appendChild(keysList);
+        iconsContainer.appendChild(keysList);
+        locationItem.appendChild(iconsContainer);
         callerDiv.appendChild(locationItem);
       }
     });
@@ -344,8 +371,24 @@ function updateDisplay(container, calledKeys) {
     container.appendChild(callerDiv);
   });
 }
+
 function main() {
-  readChatbox();
+  //check if we are running inside alt1 by checking if the alt1 global exists
+  if (window.alt1) {
+    alt1.identifyAppUrl("./appconfig.json");
+    readChatbox();
+	
+  } else {
+    let addappurl = `alt1://addapp/${
+      new URL("./appconfig.json", document.location.href).href
+    }`;
+    output.insertAdjacentHTML(
+      "beforeend",
+      `
+		Alt1 not detected, click <a href='${addappurl}'>here</a> to add this app to Alt1
+	`
+    );
+  }
 }
 
 main();

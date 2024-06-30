@@ -4138,7 +4138,7 @@ reader.readargs.colors.push(alt1__WEBPACK_IMPORTED_MODULE_4__.mixColor(165, 65, 
 );
 var keys = Object.keys(keyPermutations);
 var keysFullNames = Object.values(keyPermutations);
-var keyCallerUsernames = ["Fe Nechs", "Fe Conor"];
+var keyCallerUsernames = ["Fe Nechs", "Fe Conor", "Bazz21", "Lidica"];
 var foundKeys = [];
 var usedKeys = [];
 var calledKeys = {};
@@ -4301,6 +4301,20 @@ function readChatbox() {
         }
     }, alt1.captureInterval);
 }
+var selectedUsername = "";
+function populateUsernameDropdown() {
+    var select = document.getElementById("usernameSelect");
+    keyCallerUsernames.forEach(function (username) {
+        var option = document.createElement("option");
+        option.value = username;
+        option.textContent = username;
+        select.appendChild(option);
+    });
+    select.addEventListener("change", function (event) {
+        selectedUsername = event.target.value;
+        updateDisplay(output, calledKeys);
+    });
+}
 function updateDisplay(container, calledKeys) {
     if (!container)
         return;
@@ -4324,12 +4338,18 @@ function updateDisplay(container, calledKeys) {
                 var locationItem = document.createElement("div");
                 locationItem.className = "location-item";
                 var locationText = document.createElement("span");
-                locationText.textContent = "".concat(capitalizeWords(entry.location), " ");
+                locationText.className = "location-text";
+                locationText.textContent = capitalizeWords(entry.location);
                 locationItem.appendChild(locationText);
+                var iconsContainer = document.createElement("div");
+                iconsContainer.className = "icons-container";
                 var keysList_1 = document.createElement("ul");
+                keysList_1.className = "keys-list";
                 entry.keys.forEach(function (key) {
                     if (keyPermutations[key]) {
                         var keyItem = document.createElement("li");
+                        var keyContainer = document.createElement("div");
+                        keyContainer.className = "key-container";
                         var imgPath = void 0;
                         if (key === "dead") {
                             imgPath = "./key_images/Skull.png";
@@ -4341,13 +4361,15 @@ function updateDisplay(container, calledKeys) {
                         imgElement.src = imgPath;
                         imgElement.alt = keyPermutations[key];
                         if (foundKeys[key]) {
-                            imgElement.classList.add("key-glow");
+                            keyContainer.classList.add("key-glow");
                         }
-                        keyItem.appendChild(imgElement);
+                        keyContainer.appendChild(imgElement);
+                        keyItem.appendChild(keyContainer);
                         keysList_1.appendChild(keyItem);
                     }
                 });
-                locationItem.appendChild(keysList_1);
+                iconsContainer.appendChild(keysList_1);
+                locationItem.appendChild(iconsContainer);
                 callerDiv.appendChild(locationItem);
             }
         });
@@ -4355,7 +4377,15 @@ function updateDisplay(container, calledKeys) {
     });
 }
 function main() {
-    readChatbox();
+    //check if we are running inside alt1 by checking if the alt1 global exists
+    if (window.alt1) {
+        alt1.identifyAppUrl("./appconfig.json");
+        readChatbox();
+    }
+    else {
+        var addappurl = "alt1://addapp/".concat(new URL("./appconfig.json", document.location.href).href);
+        output.insertAdjacentHTML("beforeend", "\n\t\tAlt1 not detected, click <a href='".concat(addappurl, "'>here</a> to add this app to Alt1\n\t"));
+    }
 }
 main();
 
