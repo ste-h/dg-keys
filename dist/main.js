@@ -4123,14 +4123,16 @@ var shapes = {
 };
 var callerPriority = [];
 function setCallerPriority() {
-    var select = document.getElementById('callerPriority');
+    var select = document.getElementById("callerPriority");
     if (select) {
         var selectedCaller_1 = select.value;
-        callerPriority = __spreadArray([selectedCaller_1], keyCallerUsernames.filter(function (caller) { return caller !== selectedCaller_1; }), true);
+        callerPriority = __spreadArray([
+            selectedCaller_1
+        ], keyCallerUsernames.filter(function (caller) { return caller !== selectedCaller_1; }), true);
         updateDisplay(output, calledKeys);
     }
     else {
-        console.error('Caller priority dropdown not found');
+        console.error("Caller priority dropdown not found");
         // Use default order if dropdown is not found
         callerPriority = __spreadArray([], keyCallerUsernames, true);
     }
@@ -4311,14 +4313,24 @@ function readChatbox() {
         if (!lines) {
             return;
         }
+        // Resets on new floor message or 3 ='s in a row
+        // Keys before the 'Welcome to Daemonheim' message will be re-read, adding old keys to the new floor
+        // This attempts to avoid that happening, by detecting the text and only processing lines after it
+        // Sometimes alt1 will re-read and process the entire chat, so it has unexpected behaviour at times
+        var resetIndex = lines.findIndex(function (line) {
+            return line.text.toLowerCase().includes("welcome to daemonheim");
+        });
+        if (resetIndex !== -1) {
+            // If "Welcome to Daemonheim" is found, only process lines from that point onwards
+            lines = lines.slice(resetIndex);
+            resetDaemonheimState();
+        }
         for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
             var line = lines_1[_i];
             console.log("detected text", line.text);
-            var lineText = line.text.toLocaleLowerCase();
-            // Slightly jank when the whole chatbox is re-processed at times
-            // There's a 30 second cooldown on resetting a floor to avoid some unintended resets
-            // Resets on new floor message or 3 ='s in a row
-            if (/welcome to daemonheim|={3,}/.test(lineText)) {
+            var lineText = line.text.toLowerCase();
+            // Can also reset with ='s
+            if (/={3,}/.test(lineText)) {
                 resetDaemonheimState();
             }
             else {
@@ -4394,13 +4406,13 @@ function main() {
     if (window.alt1) {
         alt1.identifyAppUrl("./appconfig.json");
         readChatbox();
-        var select = document.getElementById('callerPriority');
+        var select = document.getElementById("callerPriority");
         if (select) {
-            select.addEventListener('change', setCallerPriority);
+            select.addEventListener("change", setCallerPriority);
             setCallerPriority();
         }
         else {
-            console.error('Caller priority dropdown not found');
+            console.error("Caller priority dropdown not found");
         }
     }
     else {
@@ -4408,7 +4420,7 @@ function main() {
         output.insertAdjacentHTML("beforeend", "\n\t\tAlt1 not detected, click <a href='".concat(addappurl, "'>here</a> to add this app to Alt1\n\t"));
     }
 }
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", function () {
     main();
 });
 

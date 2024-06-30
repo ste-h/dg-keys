@@ -54,13 +54,16 @@ const shapes: Shapes = {
 let callerPriority: string[] = [];
 
 function setCallerPriority() {
-  const select = document.getElementById('callerPriority') as HTMLSelectElement;
+  const select = document.getElementById("callerPriority") as HTMLSelectElement;
   if (select) {
     const selectedCaller = select.value;
-    callerPriority = [selectedCaller, ...keyCallerUsernames.filter(caller => caller !== selectedCaller)];
+    callerPriority = [
+      selectedCaller,
+      ...keyCallerUsernames.filter((caller) => caller !== selectedCaller),
+    ];
     updateDisplay(output, calledKeys);
   } else {
-    console.error('Caller priority dropdown not found');
+    console.error("Caller priority dropdown not found");
     // Use default order if dropdown is not found
     callerPriority = [...keyCallerUsernames];
   }
@@ -278,14 +281,27 @@ function readChatbox() {
       return;
     }
 
+	// Resets on new floor message or 3 ='s in a row
+    // Keys before the 'Welcome to Daemonheim' message will be re-read, adding old keys to the new floor
+    // This attempts to avoid that happening, by detecting the text and only processing lines after it
+	// Sometimes alt1 will re-read and process the entire chat, so it has unexpected behaviour at times
+	
+    let resetIndex = lines.findIndex((line) =>
+      line.text.toLowerCase().includes("welcome to daemonheim")
+    );
+
+    if (resetIndex !== -1) {
+      // If "Welcome to Daemonheim" is found, only process lines from that point onwards
+      lines = lines.slice(resetIndex);
+      resetDaemonheimState();
+    }
+
     for (let line of lines) {
       console.log("detected text", line.text);
-      let lineText = line.text.toLocaleLowerCase();
+      let lineText = line.text.toLowerCase();
 
-      // Slightly jank when the whole chatbox is re-processed at times
-      // There's a 30 second cooldown on resetting a floor to avoid some unintended resets
-      // Resets on new floor message or 3 ='s in a row
-      if (/welcome to daemonheim|={3,}/.test(lineText)) {
+	  // Can also reset with ='s
+      if (/={3,}/.test(lineText)) {
         resetDaemonheimState();
       } else {
         processLine(lineText);
@@ -375,19 +391,20 @@ function updateDisplay(container, calledKeys) {
   });
 }
 function main() {
-	if (window.alt1) {
-	  alt1.identifyAppUrl("./appconfig.json");
-	  readChatbox();
-  
-	  const select = document.getElementById('callerPriority') as HTMLSelectElement;
-	  if (select) {
-		select.addEventListener('change', setCallerPriority);
-		setCallerPriority();
-	  } else {
-		console.error('Caller priority dropdown not found');
-	  }
-	} else {
-  
+  if (window.alt1) {
+    alt1.identifyAppUrl("./appconfig.json");
+    readChatbox();
+
+    const select = document.getElementById(
+      "callerPriority"
+    ) as HTMLSelectElement;
+    if (select) {
+      select.addEventListener("change", setCallerPriority);
+      setCallerPriority();
+    } else {
+      console.error("Caller priority dropdown not found");
+    }
+  } else {
     let addappurl = `alt1://addapp/${
       new URL("./appconfig.json", document.location.href).href
     }`;
@@ -400,8 +417,6 @@ function main() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-	main();
-  });
-  
-  
+document.addEventListener("DOMContentLoaded", () => {
+  main();
+});
