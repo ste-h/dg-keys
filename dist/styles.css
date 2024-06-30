@@ -22,7 +22,6 @@ body {
 
 .caller-name {
   margin-bottom: 6px; /* Add this line */
-
   font-size: 0.8em;
   color: #7a7a78;
 }
@@ -38,7 +37,6 @@ body {
 
 .location-text {
   margin-top: 0;
-
   display: block;
   margin-bottom: 1px;
   color: #dbd9d4;
@@ -81,3 +79,23 @@ body {
   border-radius: 5px;
 }
 
+.minimal-dropdown {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  font-size: 10px;
+  padding: 2px;
+  background-color: #101313;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.minimal-dropdown:hover {
+  opacity: 1;
+}
+
+.caller-section:first-child {
+  margin-top: 18px;
+}

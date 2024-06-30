@@ -379,11 +379,9 @@ function main() {
 	  alt1.identifyAppUrl("./appconfig.json");
 	  readChatbox();
   
-	  // Set up the event listener for the dropdown
 	  const select = document.getElementById('callerPriority') as HTMLSelectElement;
 	  if (select) {
 		select.addEventListener('change', setCallerPriority);
-		// Initialize the caller priority
 		setCallerPriority();
 	  } else {
 		console.error('Caller priority dropdown not found');

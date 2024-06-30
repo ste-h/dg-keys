@@ -4394,11 +4394,9 @@ function main() {
     if (window.alt1) {
         alt1.identifyAppUrl("./appconfig.json");
         readChatbox();
-        // Set up the event listener for the dropdown
         var select = document.getElementById('callerPriority');
         if (select) {
             select.addEventListener('change', setCallerPriority);
-            // Initialize the caller priority
             setCallerPriority();
         }
         else {
