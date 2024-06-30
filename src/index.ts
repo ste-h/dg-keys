@@ -148,7 +148,9 @@ function processLine(lineText: string) {
     );
     const key = findKeysByValue(foundKey);
     if (key.length) {
-      foundKeys[key[0]] = keyPermutations[key[0]];
+      key.forEach((k) => {
+        foundKeys[k] = keyPermutations[k];
+      });
       updateDisplay(output, calledKeys);
     }
     return;
@@ -249,7 +251,7 @@ function readChatbox() {
 
       // Slightly jank when the whole chatbox is re-processed at times
       // There's a 30 second cooldown on resetting a floor to avoid some unintended resets
-	  // Resets on new floor message or 3 ='s in a row
+      // Resets on new floor message or 3 ='s in a row
       if (/welcome to daemonheim|={3,}/.test(lineText)) {
         resetDaemonheimState();
       } else {
