@@ -4175,6 +4175,7 @@ var callLocations = {};
 var ignoredMessages = ["thbbbbbt", "logged"];
 var lastFloorStartTime = 0;
 function appendKeysToPreviousCall(caller, keysToAppend) {
+    console.log("keys to append", keysToAppend);
     if (calledKeys[caller] && calledKeys[caller].length > 0) {
         var lastCall = calledKeys[caller][calledKeys[caller].length - 1];
         lastCall.keys = lastCall.keys
@@ -4214,6 +4215,16 @@ function removeKeysFromCalledKeys(keysToRemove) {
 function processLine(lineText) {
     // Remove single quotes from the line
     lineText = lineText.replace(/'/g, "").toLowerCase();
+    // Matches everything after username
+    var caller = keyCallerUsernames.find(function (username) {
+        return lineText.includes(username.toLocaleLowerCase());
+    });
+    if (!caller) {
+        return;
+    }
+    var regex = new RegExp("".concat(caller.toLocaleLowerCase(), ":(.*)"), "i");
+    var match = lineText.match(regex);
+    var message = match ? match[1].trim() : "";
     if (ignoredMessages.some(function (ignored) {
         return lineText.includes(ignored.toLocaleLowerCase());
     })) {
@@ -4244,27 +4255,22 @@ function processLine(lineText) {
         }
         return;
     }
-    var caller = keyCallerUsernames.find(function (username) {
-        return lineText.includes(username.toLocaleLowerCase());
-    });
-    if (!caller) {
-        return;
+    var shouldAppendToPreviousCall = false;
+    if (message.startsWith("+")) {
+        message = message.substring(1).trim(); // Remove the +
+        shouldAppendToPreviousCall = true;
     }
-    // Matches everything after username
-    var regex = new RegExp("".concat(caller.toLocaleLowerCase(), ":(.*)"), "i");
-    var match = lineText.match(regex);
-    var message = match ? match[1].trim() : "";
-    var keysCalled = keys.filter(function (key) { return lineText.split(/\s+/).includes(key); });
+    var keysCalled = keys.filter(function (key) { return message.split(/\s+/).includes(key); });
     if (keysCalled.length > 0) {
         // Filter used keys
-        var keysCalled_1 = keys.filter(function (key) { return lineText.split(/\s+/).includes(key); });
+        var keysCalled_1 = keys.filter(function (key) { return message.split(/\s+/).includes(key); });
         if (keysCalled_1.length > 0) {
             // Filter out keys that are in usedKeys
             keysCalled_1 = keysCalled_1.filter(function (key) { return !usedKeys.hasOwnProperty(key); });
             if (keysCalled_1.length > 0) {
                 // Only proceed if there are still keys after filtering
                 // Append keys to the previous call
-                if (message.startsWith("+")) {
+                if (shouldAppendToPreviousCall) {
                     appendKeysToPreviousCall(caller, keysCalled_1);
                 }
                 else {

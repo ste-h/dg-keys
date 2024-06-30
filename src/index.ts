@@ -118,6 +118,7 @@ const ignoredMessages = ["thbbbbbt", "logged"];
 let lastFloorStartTime = 0;
 
 function appendKeysToPreviousCall(caller: string, keysToAppend: string[]) {
+  console.log("keys to append", keysToAppend);
   if (calledKeys[caller] && calledKeys[caller].length > 0) {
     const lastCall = calledKeys[caller][calledKeys[caller].length - 1];
     lastCall.keys = lastCall.keys
@@ -166,6 +167,19 @@ function removeKeysFromCalledKeys(keysToRemove) {
 function processLine(lineText: string) {
   // Remove single quotes from the line
   lineText = lineText.replace(/'/g, "").toLowerCase();
+  
+  // Matches everything after username
+  let caller = keyCallerUsernames.find((username) =>
+    lineText.includes(username.toLocaleLowerCase())
+  );
+
+  if (!caller) {
+    return;
+  }
+
+  let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
+  let match = lineText.match(regex);
+  let message = match ? match[1].trim() : "";
 
   if (
     ignoredMessages.some((ignored) =>
@@ -202,24 +216,18 @@ function processLine(lineText: string) {
     return;
   }
 
-  let caller = keyCallerUsernames.find((username) =>
-    lineText.includes(username.toLocaleLowerCase())
-  );
 
-  if (!caller) {
-    return;
+  let shouldAppendToPreviousCall = false;
+  if (message.startsWith("+")) {
+    message = message.substring(1).trim(); // Remove the +
+    shouldAppendToPreviousCall = true;
   }
 
-  // Matches everything after username
-  let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
-  let match = lineText.match(regex);
-  let message = match ? match[1].trim() : "";
-
-  let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
+  let keysCalled = keys.filter((key) => message.split(/\s+/).includes(key));
 
   if (keysCalled.length > 0) {
     // Filter used keys
-    let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
+    let keysCalled = keys.filter((key) => message.split(/\s+/).includes(key));
 
     if (keysCalled.length > 0) {
       // Filter out keys that are in usedKeys
@@ -228,7 +236,7 @@ function processLine(lineText: string) {
       if (keysCalled.length > 0) {
         // Only proceed if there are still keys after filtering
         // Append keys to the previous call
-        if (message.startsWith("+")) {
+        if (shouldAppendToPreviousCall) {
           appendKeysToPreviousCall(caller, keysCalled);
         } else {
           // Remove called keys from the location
@@ -302,10 +310,9 @@ function readChatbox() {
 
     for (let line of lines) {
       console.log("detected text", line.text);
-	  // Remove single quotes
+      // Remove single quotes
       let lineText = line.text.replace(/'/g, "").toLowerCase();
-	  console.log("single quotes removed", lineText);
-
+      console.log("single quotes removed", lineText);
 
       // Can also reset with ='s
       if (/={3,}/.test(lineText)) {
