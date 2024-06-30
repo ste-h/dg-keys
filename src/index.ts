@@ -96,6 +96,7 @@ function generateKeyPermutations(colours: Colours, shapes: Shapes) {
 
 const keyPermutations = generateKeyPermutations(colours, shapes);
 keyPermutations["dead"] = "Dead";
+keyPermutations["boss"] = "Boss";
 
 console.log(keyPermutations);
 
@@ -281,12 +282,11 @@ function readChatbox() {
       return;
     }
 
-	// Resets on new floor message or 3 ='s in a row
-    // Keys before the 'Welcome to Daemonheim' message will be re-read, adding old keys to the new floor
-    // This attempts to avoid that happening, by detecting the text and only processing lines after it
-	// Sometimes alt1 will re-read and process the entire chat, so it has unexpected behaviour at times
-	// There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed out in that period
-	
+    // Resets on new floor message or 3 ='s in a row
+    // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
+	// So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
+    // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
+
     let resetIndex = lines.findIndex((line) =>
       line.text.toLowerCase().includes("welcome to daemonheim")
     );
@@ -301,7 +301,7 @@ function readChatbox() {
       console.log("detected text", line.text);
       let lineText = line.text.toLowerCase();
 
-	  // Can also reset with ='s
+      // Can also reset with ='s
       if (/={3,}/.test(lineText)) {
         resetDaemonheimState();
       } else {
@@ -361,6 +361,9 @@ function updateDisplay(container, calledKeys) {
               let imgPath;
               if (key === "dead") {
                 imgPath = "./key_images/Skull.png";
+              }
+              if (key === "boss") {
+                imgPath = "./key_images/Boss.png";
               } else {
                 imgPath = `./key_images/${keyPermutations[key].replace(
                   / /g,

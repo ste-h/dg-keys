@@ -4160,6 +4160,7 @@ function generateKeyPermutations(colours, shapes) {
 }
 var keyPermutations = generateKeyPermutations(colours, shapes);
 keyPermutations["dead"] = "Dead";
+keyPermutations["boss"] = "Boss";
 console.log(keyPermutations);
 var reader = new (alt1_chatbox__WEBPACK_IMPORTED_MODULE_3___default())();
 reader.readargs.colors.push(alt1__WEBPACK_IMPORTED_MODULE_4__.mixColor(165, 65, 20) // Found/used keys color
@@ -4314,10 +4315,9 @@ function readChatbox() {
             return;
         }
         // Resets on new floor message or 3 ='s in a row
-        // Keys before the 'Welcome to Daemonheim' message will be re-read, adding old keys to the new floor
-        // This attempts to avoid that happening, by detecting the text and only processing lines after it
-        // Sometimes alt1 will re-read and process the entire chat, so it has unexpected behaviour at times
-        // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed out in that period
+        // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
+        // So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
+        // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
         var resetIndex = lines.findIndex(function (line) {
             return line.text.toLowerCase().includes("welcome to daemonheim");
         });
@@ -4379,6 +4379,9 @@ function updateDisplay(container, calledKeys) {
                             var imgPath = void 0;
                             if (key === "dead") {
                                 imgPath = "./key_images/Skull.png";
+                            }
+                            if (key === "boss") {
+                                imgPath = "./key_images/Boss.png";
                             }
                             else {
                                 imgPath = "./key_images/".concat(keyPermutations[key].replace(/ /g, "_"), ".png");
