@@ -4113,7 +4113,10 @@ var shapes = {
     re: "Rectangle",
 };
 function capitalizeWords(str) {
-    var words = str.split(" ");
+    if (str.trim() === "") {
+        return "";
+    }
+    var words = str.split(" ").filter(function (word) { return word !== ""; });
     for (var i = 0; i < words.length; i++) {
         words[i] = words[i][0].toUpperCase() + words[i].slice(1);
     }
@@ -4325,7 +4328,7 @@ function updateDisplay(container, calledKeys) {
                 locationItem.className = "location-item";
                 var locationText = document.createElement("span");
                 locationText.className = "location-text";
-                locationText.textContent = capitalizeWords(entry.location);
+                locationText.textContent = "".concat(capitalizeWords(entry.location));
                 locationItem.appendChild(locationText);
                 var iconsContainer = document.createElement("div");
                 iconsContainer.className = "icons-container";

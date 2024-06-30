@@ -52,7 +52,11 @@ const shapes: Shapes = {
 };
 
 function capitalizeWords(str) {
-  const words = str.split(" ");
+  if (str.trim() === "") {
+    return "";
+  }
+
+  const words = str.split(" ").filter((word) => word !== "");
   for (let i = 0; i < words.length; i++) {
     words[i] = words[i][0].toUpperCase() + words[i].slice(1);
   }
@@ -276,7 +280,6 @@ function readChatbox() {
   }, alt1.captureInterval);
 }
 
-
 function updateDisplay(container, calledKeys) {
   if (!container) return;
 
@@ -307,7 +310,7 @@ function updateDisplay(container, calledKeys) {
 
         const locationText = document.createElement("span");
         locationText.className = "location-text";
-        locationText.textContent = capitalizeWords(entry.location);
+        locationText.textContent = `${capitalizeWords(entry.location)}`;
         locationItem.appendChild(locationText);
 
         const iconsContainer = document.createElement("div");
@@ -320,9 +323,9 @@ function updateDisplay(container, calledKeys) {
           if (keyPermutations[key]) {
             const keyItem = document.createElement("li");
 
-			const keyContainer = document.createElement("div");
-			keyContainer.className = "key-container";
-		
+            const keyContainer = document.createElement("div");
+            keyContainer.className = "key-container";
+
             let imgPath;
             if (key === "dead") {
               imgPath = "./key_images/Skull.png";
@@ -340,10 +343,10 @@ function updateDisplay(container, calledKeys) {
               keyContainer.classList.add("key-glow");
             }
 
-			keyContainer.appendChild(imgElement);
-			keyItem.appendChild(keyContainer);
-			keysList.appendChild(keyItem);
-				  }
+            keyContainer.appendChild(imgElement);
+            keyItem.appendChild(keyContainer);
+            keysList.appendChild(keyItem);
+          }
         });
 
         iconsContainer.appendChild(keysList);
