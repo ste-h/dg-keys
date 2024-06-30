@@ -4317,12 +4317,13 @@ function readChatbox() {
         // Keys before the 'Welcome to Daemonheim' message will be re-read, adding old keys to the new floor
         // This attempts to avoid that happening, by detecting the text and only processing lines after it
         // Sometimes alt1 will re-read and process the entire chat, so it has unexpected behaviour at times
+        // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed out in that period
         var resetIndex = lines.findIndex(function (line) {
             return line.text.toLowerCase().includes("welcome to daemonheim");
         });
         if (resetIndex !== -1) {
             // If "Welcome to Daemonheim" is found, only process lines from that point onwards
-            lines = lines.slice(resetIndex);
+            lines = lines.slice(resetIndex + 1);
             resetDaemonheimState();
         }
         for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
