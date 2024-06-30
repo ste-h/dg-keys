@@ -4067,6 +4067,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _icon_png__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./icon.png */ "./icon.png");
 /* harmony import */ var alt1_chatbox__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! alt1/chatbox */ "../node_modules/alt1/dist/chatbox/index.js");
 /* harmony import */ var alt1_chatbox__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(alt1_chatbox__WEBPACK_IMPORTED_MODULE_3__);
+var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 // alt1 base libs, provides all the commonly used methods for image matching and capture
 // also gives your editor info about the window.alt1 api
 
@@ -4112,6 +4121,20 @@ var shapes = {
     r: "Rectangle",
     re: "Rectangle",
 };
+var callerPriority = [];
+function setCallerPriority() {
+    var select = document.getElementById('callerPriority');
+    if (select) {
+        var selectedCaller_1 = select.value;
+        callerPriority = __spreadArray([selectedCaller_1], keyCallerUsernames.filter(function (caller) { return caller !== selectedCaller_1; }), true);
+        updateDisplay(output, calledKeys);
+    }
+    else {
+        console.error('Caller priority dropdown not found');
+        // Use default order if dropdown is not found
+        callerPriority = __spreadArray([], keyCallerUsernames, true);
+    }
+}
 function capitalizeWords(str) {
     if (str.trim() === "") {
         return "";
@@ -4308,75 +4331,88 @@ function updateDisplay(container, calledKeys) {
     if (!container)
         return;
     container.innerHTML = "";
-    Object.keys(calledKeys).forEach(function (caller) {
-        var callerDiv = document.createElement("div");
-        callerDiv.className = "caller-section";
-        var callerTitle = document.createElement("h2");
-        callerTitle.className = "caller-name";
-        callerTitle.textContent = caller;
-        callerDiv.appendChild(callerTitle);
-        var uniqueLocations = new Map();
-        for (var i = calledKeys[caller].length - 1; i >= 0; i--) {
-            var entry = calledKeys[caller][i];
-            if (!uniqueLocations.has(entry.location)) {
-                uniqueLocations.set(entry.location, entry);
+    callerPriority.forEach(function (caller) {
+        if (calledKeys[caller]) {
+            var callerDiv_1 = document.createElement("div");
+            callerDiv_1.className = "caller-section";
+            var callerTitle = document.createElement("h2");
+            callerTitle.className = "caller-name";
+            callerTitle.textContent = caller;
+            callerDiv_1.appendChild(callerTitle);
+            var uniqueLocations = new Map();
+            for (var i = calledKeys[caller].length - 1; i >= 0; i--) {
+                var entry = calledKeys[caller][i];
+                if (!uniqueLocations.has(entry.location)) {
+                    uniqueLocations.set(entry.location, entry);
+                }
             }
+            uniqueLocations.forEach(function (entry) {
+                if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
+                    var locationItem = document.createElement("div");
+                    locationItem.className = "location-item";
+                    var locationText = document.createElement("span");
+                    locationText.className = "location-text";
+                    locationText.textContent = "".concat(capitalizeWords(entry.location));
+                    locationItem.appendChild(locationText);
+                    var iconsContainer = document.createElement("div");
+                    iconsContainer.className = "icons-container";
+                    var keysList_1 = document.createElement("ul");
+                    keysList_1.className = "keys-list";
+                    entry.keys.forEach(function (key) {
+                        if (keyPermutations[key]) {
+                            var keyItem = document.createElement("li");
+                            var keyContainer = document.createElement("div");
+                            keyContainer.className = "key-container";
+                            var imgPath = void 0;
+                            if (key === "dead") {
+                                imgPath = "./key_images/Skull.png";
+                            }
+                            else {
+                                imgPath = "./key_images/".concat(keyPermutations[key].replace(/ /g, "_"), ".png");
+                            }
+                            var imgElement = document.createElement("img");
+                            imgElement.src = imgPath;
+                            imgElement.alt = keyPermutations[key];
+                            if (foundKeys[key]) {
+                                keyContainer.classList.add("key-glow");
+                            }
+                            keyContainer.appendChild(imgElement);
+                            keyItem.appendChild(keyContainer);
+                            keysList_1.appendChild(keyItem);
+                        }
+                    });
+                    iconsContainer.appendChild(keysList_1);
+                    locationItem.appendChild(iconsContainer);
+                    callerDiv_1.appendChild(locationItem);
+                }
+            });
+            container.appendChild(callerDiv_1);
         }
-        uniqueLocations.forEach(function (entry) {
-            if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
-                var locationItem = document.createElement("div");
-                locationItem.className = "location-item";
-                var locationText = document.createElement("span");
-                locationText.className = "location-text";
-                locationText.textContent = "".concat(capitalizeWords(entry.location));
-                locationItem.appendChild(locationText);
-                var iconsContainer = document.createElement("div");
-                iconsContainer.className = "icons-container";
-                var keysList_1 = document.createElement("ul");
-                keysList_1.className = "keys-list";
-                entry.keys.forEach(function (key) {
-                    if (keyPermutations[key]) {
-                        var keyItem = document.createElement("li");
-                        var keyContainer = document.createElement("div");
-                        keyContainer.className = "key-container";
-                        var imgPath = void 0;
-                        if (key === "dead") {
-                            imgPath = "./key_images/Skull.png";
-                        }
-                        else {
-                            imgPath = "./key_images/".concat(keyPermutations[key].replace(/ /g, "_"), ".png");
-                        }
-                        var imgElement = document.createElement("img");
-                        imgElement.src = imgPath;
-                        imgElement.alt = keyPermutations[key];
-                        if (foundKeys[key]) {
-                            keyContainer.classList.add("key-glow");
-                        }
-                        keyContainer.appendChild(imgElement);
-                        keyItem.appendChild(keyContainer);
-                        keysList_1.appendChild(keyItem);
-                    }
-                });
-                iconsContainer.appendChild(keysList_1);
-                locationItem.appendChild(iconsContainer);
-                callerDiv.appendChild(locationItem);
-            }
-        });
-        container.appendChild(callerDiv);
     });
 }
 function main() {
-    //check if we are running inside alt1 by checking if the alt1 global exists
     if (window.alt1) {
         alt1.identifyAppUrl("./appconfig.json");
         readChatbox();
+        // Set up the event listener for the dropdown
+        var select = document.getElementById('callerPriority');
+        if (select) {
+            select.addEventListener('change', setCallerPriority);
+            // Initialize the caller priority
+            setCallerPriority();
+        }
+        else {
+            console.error('Caller priority dropdown not found');
+        }
     }
     else {
         var addappurl = "alt1://addapp/".concat(new URL("./appconfig.json", document.location.href).href);
         output.insertAdjacentHTML("beforeend", "\n\t\tAlt1 not detected, click <a href='".concat(addappurl, "'>here</a> to add this app to Alt1\n\t"));
     }
 }
-main();
+document.addEventListener('DOMContentLoaded', function () {
+    main();
+});
 
 })();
 

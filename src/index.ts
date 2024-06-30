@@ -51,6 +51,20 @@ const shapes: Shapes = {
   re: "Rectangle",
 };
 
+let callerPriority: string[] = [];
+
+function setCallerPriority() {
+  const select = document.getElementById('callerPriority') as HTMLSelectElement;
+  if (select) {
+    const selectedCaller = select.value;
+    callerPriority = [selectedCaller, ...keyCallerUsernames.filter(caller => caller !== selectedCaller)];
+    updateDisplay(output, calledKeys);
+  } else {
+    console.error('Caller priority dropdown not found');
+    // Use default order if dropdown is not found
+    callerPriority = [...keyCallerUsernames];
+  }
+}
 function capitalizeWords(str) {
   if (str.trim() === "") {
     return "";
@@ -285,86 +299,97 @@ function updateDisplay(container, calledKeys) {
 
   container.innerHTML = "";
 
-  Object.keys(calledKeys).forEach((caller) => {
-    const callerDiv = document.createElement("div");
-    callerDiv.className = "caller-section";
+  callerPriority.forEach((caller) => {
+    if (calledKeys[caller]) {
+      const callerDiv = document.createElement("div");
+      callerDiv.className = "caller-section";
 
-    const callerTitle = document.createElement("h2");
-    callerTitle.className = "caller-name";
-    callerTitle.textContent = caller;
-    callerDiv.appendChild(callerTitle);
+      const callerTitle = document.createElement("h2");
+      callerTitle.className = "caller-name";
+      callerTitle.textContent = caller;
+      callerDiv.appendChild(callerTitle);
 
-    const uniqueLocations = new Map();
+      const uniqueLocations = new Map();
 
-    for (let i = calledKeys[caller].length - 1; i >= 0; i--) {
-      const entry = calledKeys[caller][i];
-      if (!uniqueLocations.has(entry.location)) {
-        uniqueLocations.set(entry.location, entry);
+      for (let i = calledKeys[caller].length - 1; i >= 0; i--) {
+        const entry = calledKeys[caller][i];
+        if (!uniqueLocations.has(entry.location)) {
+          uniqueLocations.set(entry.location, entry);
+        }
       }
+
+      uniqueLocations.forEach((entry) => {
+        if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
+          const locationItem = document.createElement("div");
+          locationItem.className = "location-item";
+
+          const locationText = document.createElement("span");
+          locationText.className = "location-text";
+          locationText.textContent = `${capitalizeWords(entry.location)}`;
+          locationItem.appendChild(locationText);
+
+          const iconsContainer = document.createElement("div");
+          iconsContainer.className = "icons-container";
+
+          const keysList = document.createElement("ul");
+          keysList.className = "keys-list";
+
+          entry.keys.forEach((key) => {
+            if (keyPermutations[key]) {
+              const keyItem = document.createElement("li");
+
+              const keyContainer = document.createElement("div");
+              keyContainer.className = "key-container";
+
+              let imgPath;
+              if (key === "dead") {
+                imgPath = "./key_images/Skull.png";
+              } else {
+                imgPath = `./key_images/${keyPermutations[key].replace(
+                  / /g,
+                  "_"
+                )}.png`;
+              }
+              const imgElement = document.createElement("img");
+              imgElement.src = imgPath;
+              imgElement.alt = keyPermutations[key];
+
+              if (foundKeys[key]) {
+                keyContainer.classList.add("key-glow");
+              }
+
+              keyContainer.appendChild(imgElement);
+              keyItem.appendChild(keyContainer);
+              keysList.appendChild(keyItem);
+            }
+          });
+
+          iconsContainer.appendChild(keysList);
+          locationItem.appendChild(iconsContainer);
+          callerDiv.appendChild(locationItem);
+        }
+      });
+
+      container.appendChild(callerDiv);
     }
-
-    uniqueLocations.forEach((entry) => {
-      if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
-        const locationItem = document.createElement("div");
-        locationItem.className = "location-item";
-
-        const locationText = document.createElement("span");
-        locationText.className = "location-text";
-        locationText.textContent = `${capitalizeWords(entry.location)}`;
-        locationItem.appendChild(locationText);
-
-        const iconsContainer = document.createElement("div");
-        iconsContainer.className = "icons-container";
-
-        const keysList = document.createElement("ul");
-        keysList.className = "keys-list";
-
-        entry.keys.forEach((key) => {
-          if (keyPermutations[key]) {
-            const keyItem = document.createElement("li");
-
-            const keyContainer = document.createElement("div");
-            keyContainer.className = "key-container";
-
-            let imgPath;
-            if (key === "dead") {
-              imgPath = "./key_images/Skull.png";
-            } else {
-              imgPath = `./key_images/${keyPermutations[key].replace(
-                / /g,
-                "_"
-              )}.png`;
-            }
-            const imgElement = document.createElement("img");
-            imgElement.src = imgPath;
-            imgElement.alt = keyPermutations[key];
-
-            if (foundKeys[key]) {
-              keyContainer.classList.add("key-glow");
-            }
-
-            keyContainer.appendChild(imgElement);
-            keyItem.appendChild(keyContainer);
-            keysList.appendChild(keyItem);
-          }
-        });
-
-        iconsContainer.appendChild(keysList);
-        locationItem.appendChild(iconsContainer);
-        callerDiv.appendChild(locationItem);
-      }
-    });
-
-    container.appendChild(callerDiv);
   });
 }
-
 function main() {
-  //check if we are running inside alt1 by checking if the alt1 global exists
-  if (window.alt1) {
-    alt1.identifyAppUrl("./appconfig.json");
-    readChatbox();
-  } else {
+	if (window.alt1) {
+	  alt1.identifyAppUrl("./appconfig.json");
+	  readChatbox();
+  
+	  // Set up the event listener for the dropdown
+	  const select = document.getElementById('callerPriority') as HTMLSelectElement;
+	  if (select) {
+		select.addEventListener('change', setCallerPriority);
+		// Initialize the caller priority
+		setCallerPriority();
+	  } else {
+		console.error('Caller priority dropdown not found');
+	  }
+	} else {
+  
     let addappurl = `alt1://addapp/${
       new URL("./appconfig.json", document.location.href).href
     }`;
@@ -377,4 +402,8 @@ function main() {
   }
 }
 
-main();
+document.addEventListener('DOMContentLoaded', () => {
+	main();
+  });
+  
+  
