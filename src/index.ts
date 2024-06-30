@@ -276,23 +276,7 @@ function readChatbox() {
   }, alt1.captureInterval);
 }
 
-let selectedUsername = "";
 
-function populateUsernameDropdown() {
-	const select = document.getElementById("usernameSelect");
-	keyCallerUsernames.forEach(username => {
-	  const option = document.createElement("option");
-	  option.value = username;
-	  option.textContent = username;
-	  select.appendChild(option);
-	});
-  
-	select.addEventListener("change", (event) => {
-	  selectedUsername = event.target.value;
-	  updateDisplay(output, calledKeys);
-	});
-  }
-  
 function updateDisplay(container, calledKeys) {
   if (!container) return;
 
@@ -377,7 +361,6 @@ function main() {
   if (window.alt1) {
     alt1.identifyAppUrl("./appconfig.json");
     readChatbox();
-	
   } else {
     let addappurl = `alt1://addapp/${
       new URL("./appconfig.json", document.location.href).href

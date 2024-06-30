@@ -4301,20 +4301,6 @@ function readChatbox() {
         }
     }, alt1.captureInterval);
 }
-var selectedUsername = "";
-function populateUsernameDropdown() {
-    var select = document.getElementById("usernameSelect");
-    keyCallerUsernames.forEach(function (username) {
-        var option = document.createElement("option");
-        option.value = username;
-        option.textContent = username;
-        select.appendChild(option);
-    });
-    select.addEventListener("change", function (event) {
-        selectedUsername = event.target.value;
-        updateDisplay(output, calledKeys);
-    });
-}
 function updateDisplay(container, calledKeys) {
     if (!container)
         return;
