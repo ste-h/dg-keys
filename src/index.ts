@@ -164,9 +164,6 @@ function removeKeysFromCalledKeys(keysToRemove) {
 }
 
 function processLine(lineText: string) {
-  // Remove single quotes from the line
-  lineText = lineText.replace(/'/g, "").toLowerCase();
-
   if (
     ignoredMessages.some((ignored) =>
       lineText.includes(ignored.toLocaleLowerCase())
@@ -287,7 +284,7 @@ function readChatbox() {
 
     // Resets on new floor message or 3 ='s in a row
     // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
-    // So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
+	// So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
     // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
 
     let resetIndex = lines.findIndex((line) =>
@@ -302,10 +299,7 @@ function readChatbox() {
 
     for (let line of lines) {
       console.log("detected text", line.text);
-	  // Remove single quotes
-      let lineText = line.text.replace(/'/g, "").toLowerCase();
-	  console.log("single quotes removed", lineText);
-
+      let lineText = line.text.toLowerCase();
 
       // Can also reset with ='s
       if (/={3,}/.test(lineText)) {
