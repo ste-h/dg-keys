@@ -9297,6 +9297,7 @@ function processLine(lineText) {
         console.log("Reset message detected, resetting state");
         resetDaemonheimState();
         latestProcessedTimestamp = timestamp;
+        console.log('New latest timestamp:', latestProcessedTimestamp);
     }
     if (ignoredMessages.some(function (ignored) {
         return lineText.includes(ignored.toLocaleLowerCase());
@@ -9313,6 +9314,7 @@ function processLine(lineText) {
                 foundKeys[k] = keyPermutations[k];
             });
             updateDisplay(output, calledKeys);
+            console.log('Found Keys:', foundKeys);
         }
         return;
     }
@@ -9328,6 +9330,7 @@ function processLine(lineText) {
                 });
                 removeKeysFromCalledKeys(keys_1);
                 updateDisplay(output, calledKeys);
+                console.log('Used Keys:', usedKeys);
             }
         }
         return;
@@ -9423,7 +9426,7 @@ function readChatbox() {
         }
         for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
             var line = lines_1[_i];
-            console.log("detected text", line.text);
+            console.log("Unprocessed Text:", line.text);
             var lineText = line.text.toLowerCase();
             processLine(lineText);
         }

@@ -212,6 +212,7 @@ function processLine(lineText: string) {
     console.log("Reset message detected, resetting state");
     resetDaemonheimState();
     latestProcessedTimestamp = timestamp;
+	console.log('New latest timestamp:', latestProcessedTimestamp)
   }
 
   if (
@@ -232,6 +233,7 @@ function processLine(lineText: string) {
         foundKeys[k] = keyPermutations[k];
       });
       updateDisplay(output, calledKeys);
+	  console.log('Found Keys:', foundKeys)
     }
     return;
   }
@@ -250,6 +252,7 @@ function processLine(lineText: string) {
         });
         removeKeysFromCalledKeys(keys);
         updateDisplay(output, calledKeys);
+		console.log('Used Keys:', usedKeys)
       }
     }
     return;
@@ -359,7 +362,7 @@ function readChatbox() {
     }
 
     for (let line of lines) {
-      console.log("detected text", line.text);
+      console.log("Unprocessed Text:", line.text);
       let lineText = line.text.toLowerCase();
       processLine(lineText);
     }
