@@ -1,9 +1,48 @@
 <!DOCTYPE html>
 <html>
-	<head></head>
-	<title>Dg Keys</title>
-	<body>
-		<div id="output"></div>
-		<script src="./main.js"></script>
-	</body>
+<head>
+    <title>Dg Keys</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js"></script>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div class="container">
+        <select id="callerPriority" class="minimal-dropdown">
+            <option value="Fe Nechs">Fe Nechs</option>
+            <option value="Fe Conor">Fe Conor</option>
+            <option value="Bazz21">Bazz21</option>
+            <option value="Lidica">Lidica</option>
+        </select>
+
+        <div id="output"></div>
+
+        <script id="keys-template" type="text/x-handlebars-template">
+            {{#each callers}}
+                <div class="caller-section">
+                    <h2 class="caller-name">{{@key}}</h2>
+                    {{#each this}}
+                        {{#if keys.length}}
+                            <div class="location-item">
+                                <span class="location-text">{{capitalizeWords location}}</span>
+                                <div class="icons-container">
+                                    <ul class="keys-list">
+                                        {{#each keys}}
+                                            <li>
+                                                <div class="key-container {{#if found}}key-glow{{/if}}">
+                                                    <img src="{{imagePath key}}" alt="{{keyName key}}">
+                                                </div>
+                                            </li>
+                                        {{/each}}
+                                    </ul>
+                                </div>
+                            </div>
+                        {{/if}}
+                    {{/each}}
+                </div>
+            {{/each}}
+        </script>
+    </div>
+
+    <script src="./main.js"></script>
+</body>
 </html>

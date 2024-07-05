@@ -10,6 +10,7 @@ import "./index.html";
 import "./appconfig.json";
 import "./icon.png";
 import ChatBoxReader from "alt1/chatbox";
+import * as Handlebars from "handlebars";
 
 var output = document.getElementById("output");
 
@@ -45,29 +46,11 @@ const shapes: Shapes = {
   t: "Triangle",
   tr: "Triangle",
   tri: "Triangle",
-  // add tri
   p: "Pentagon",
   r: "Rectangle",
   re: "Rectangle",
 };
 
-let callerPriority: string[] = [];
-
-function setCallerPriority() {
-  const select = document.getElementById("callerPriority") as HTMLSelectElement;
-  if (select) {
-    const selectedCaller = select.value;
-    callerPriority = [
-      selectedCaller,
-      ...keyCallerUsernames.filter((caller) => caller !== selectedCaller),
-    ];
-    updateDisplay(output, calledKeys);
-  } else {
-    console.error("Caller priority dropdown not found");
-    // Use default order if dropdown is not found
-    callerPriority = [...keyCallerUsernames];
-  }
-}
 function capitalizeWords(str) {
   if (str.trim() === "") {
     return "";
@@ -116,6 +99,22 @@ let calledKeys = {};
 let callLocations = {};
 const ignoredMessages = ["thbbbbbt", "logged"];
 let lastFloorStartTime = 0;
+
+let callerPriority: string[] = [...keyCallerUsernames];
+
+function setCallerPriority() {
+  const select = document.getElementById("callerPriority") as HTMLSelectElement;
+  if (select) {
+    const selectedCaller = select.value;
+    callerPriority = [
+      selectedCaller,
+      ...keyCallerUsernames.filter((caller) => caller !== selectedCaller),
+    ];
+    updateDisplay(output, calledKeys);
+  } else {
+    console.error("Caller priority dropdown not found");
+  }
+}
 
 function appendKeysToPreviousCall(caller: string, keysToAppend: string[]) {
   if (calledKeys[caller] && calledKeys[caller].length > 0) {
@@ -284,7 +283,7 @@ function readChatbox() {
 
     // Resets on new floor message or 3 ='s in a row
     // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
-	// So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
+    // So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
     // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
 
     let resetIndex = lines.findIndex((line) =>
@@ -311,21 +310,44 @@ function readChatbox() {
   }, alt1.captureInterval);
 }
 
-function updateDisplay(container, calledKeys) {
+Handlebars.registerHelper("capitalizeWords", function (str) {
+  return capitalizeWords(str);
+});
+
+Handlebars.registerHelper("imagePath", function (key) {
+  if (key === "dead") {
+    return "./key_images/Skull.png";
+  } else if (key === "boss") {
+    return "./key_images/Boss.png";
+  } else {
+    return `./key_images/${keyPermutations[key].replace(/ /g, "_")}.png`;
+  }
+});
+
+Handlebars.registerHelper("keyName", function (key) {
+  return keyPermutations[key] || key;
+});
+
+function updateDisplay(container: HTMLElement, calledKeys: any) {
   if (!container) return;
 
-  container.innerHTML = "";
+  const templateSource = document.getElementById(
+    "keys-template"
+  ) as HTMLElement;
+  if (!templateSource) {
+    console.error("Template not found");
+    return;
+  }
+
+  const template = Handlebars.compile(templateSource.innerHTML);
+
+  const data = {
+    callers: {},
+  };
 
   callerPriority.forEach((caller) => {
     if (calledKeys[caller]) {
-      const callerDiv = document.createElement("div");
-      callerDiv.className = "caller-section";
-
-      const callerTitle = document.createElement("h2");
-      callerTitle.className = "caller-name";
-      callerTitle.textContent = caller;
-      callerDiv.appendChild(callerTitle);
-
+      data.callers[caller] = [];
       const uniqueLocations = new Map();
 
       for (let i = calledKeys[caller].length - 1; i >= 0; i--) {
@@ -337,63 +359,21 @@ function updateDisplay(container, calledKeys) {
 
       uniqueLocations.forEach((entry) => {
         if (entry.keys.length > 0 && entry.timestamp > lastFloorStartTime) {
-          const locationItem = document.createElement("div");
-          locationItem.className = "location-item";
-
-          const locationText = document.createElement("span");
-          locationText.className = "location-text";
-          locationText.textContent = `${capitalizeWords(entry.location)}`;
-          locationItem.appendChild(locationText);
-
-          const iconsContainer = document.createElement("div");
-          iconsContainer.className = "icons-container";
-
-          const keysList = document.createElement("ul");
-          keysList.className = "keys-list";
-
-          entry.keys.forEach((key) => {
-            if (keyPermutations[key]) {
-              const keyItem = document.createElement("li");
-
-              const keyContainer = document.createElement("div");
-              keyContainer.className = "key-container";
-
-              let imgPath;
-              if (key === "dead") {
-                imgPath = "./key_images/Skull.png";
-              }
-              else if (key === "boss") {
-                imgPath = "./key_images/Boss.png";
-              } else {
-                imgPath = `./key_images/${keyPermutations[key].replace(
-                  / /g,
-                  "_"
-                )}.png`;
-              }
-              const imgElement = document.createElement("img");
-              imgElement.src = imgPath;
-              imgElement.alt = keyPermutations[key];
-
-              if (foundKeys[key]) {
-                keyContainer.classList.add("key-glow");
-              }
-
-              keyContainer.appendChild(imgElement);
-              keyItem.appendChild(keyContainer);
-              keysList.appendChild(keyItem);
-            }
+          data.callers[caller].push({
+            location: entry.location,
+            keys: entry.keys.map((key) => ({
+              key: key,
+              found: foundKeys.hasOwnProperty(key),
+            })),
           });
-
-          iconsContainer.appendChild(keysList);
-          locationItem.appendChild(iconsContainer);
-          callerDiv.appendChild(locationItem);
         }
       });
-
-      container.appendChild(callerDiv);
     }
   });
+
+  container.innerHTML = template(data);
 }
+
 function main() {
   if (window.alt1) {
     alt1.identifyAppUrl("./appconfig.json");
@@ -414,9 +394,7 @@ function main() {
     }`;
     output.insertAdjacentHTML(
       "beforeend",
-      `
-		Alt1 not detected, click <a href='${addappurl}'>here</a> to add this app to Alt1
-	`
+      `Alt1 not detected, click <a href='${addappurl}'>here</a> to add this app to Alt1`
     );
   }
 }
