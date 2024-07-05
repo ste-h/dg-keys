@@ -9317,14 +9317,18 @@ function processLine(lineText) {
         return;
     }
     if (lineText.includes("used a key")) {
-        var foundKey = keysFullNames.find(function (key) {
+        var foundKey_1 = keysFullNames.find(function (key) {
             return lineText.includes(key.toLowerCase());
         });
-        var keys_1 = findKeysByValue(foundKey);
-        if (keys_1.length > 0) {
-            usedKeys[keys_1[0]] = keyPermutations[keys_1[0]];
-            removeKeysFromCalledKeys(keys_1);
-            updateDisplay(output, calledKeys);
+        if (foundKey_1) {
+            var keys_1 = Object.keys(keyPermutations).filter(function (k) { return keyPermutations[k].toLowerCase() === foundKey_1.toLowerCase(); });
+            if (keys_1.length > 0) {
+                keys_1.forEach(function (key) {
+                    usedKeys[key] = keyPermutations[key];
+                });
+                removeKeysFromCalledKeys(keys_1);
+                updateDisplay(output, calledKeys);
+            }
         }
         return;
     }
@@ -9345,10 +9349,20 @@ function processLine(lineText) {
         lineText = lineText.replace(/\+/, "");
         console.log("Appending keys from line:", lineText);
     }
+    // Detect all keys in the message
     var keysCalled = keys.filter(function (key) { return lineText.split(/\s+/).includes(key); });
-    console.log('Keys called = ', keysCalled);
+    console.log("Keys called = ", keysCalled);
+    // Remove called keys from the location
+    // Ensures keys wont be used for the location
+    keysCalled.forEach(function (key) {
+        var keyRegex = new RegExp("\\b".concat(key, "\\b"), "gi");
+        var originalMessage = message;
+        message = message.replace(keyRegex, "");
+        console.log("Removing keys '".concat(key, "': Original:'").concat(originalMessage, "' New: '").concat(message, "'"));
+    });
     if (keysCalled.length > 0) {
         // Filter out used keys
+        console.log("Used keys:", usedKeys);
         keysCalled = keysCalled.filter(function (key) { return !usedKeys.hasOwnProperty(key); });
         if (keysCalled.length > 0) {
             if (shouldAppend) {
@@ -9356,11 +9370,6 @@ function processLine(lineText) {
                 appendKeysToPreviousCall(caller, keysCalled);
             }
             else {
-                // Remove called keys from the location
-                keysCalled.forEach(function (key) {
-                    var keyRegex = new RegExp("\\b".concat(key, "\\b"), "gi");
-                    message = message.replace(keyRegex, "");
-                });
                 // Trim to get location
                 var location_1 = message.trim();
                 if (!calledKeys[caller]) {

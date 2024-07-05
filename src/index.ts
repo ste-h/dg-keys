@@ -106,7 +106,7 @@ let callerPriority: string[] = [...keyCallerUsernames];
 
 function parseTimestamp(line: string): Date | null {
   const match = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\]/);
-//   console.log("Timestamp detected:", match);
+  //   console.log("Timestamp detected:", match);
 
   if (match) {
     const [, hours, minutes, seconds] = match;
@@ -240,11 +240,17 @@ function processLine(lineText: string) {
     const foundKey = keysFullNames.find((key) =>
       lineText.includes(key.toLowerCase())
     );
-    const keys = findKeysByValue(foundKey);
-    if (keys.length > 0) {
-      usedKeys[keys[0]] = keyPermutations[keys[0]];
-      removeKeysFromCalledKeys(keys);
-      updateDisplay(output, calledKeys);
+    if (foundKey) {
+      const keys = Object.keys(keyPermutations).filter(
+        (k) => keyPermutations[k].toLowerCase() === foundKey.toLowerCase()
+      );
+      if (keys.length > 0) {
+        keys.forEach((key) => {
+          usedKeys[key] = keyPermutations[key];
+        });
+        removeKeysFromCalledKeys(keys);
+        updateDisplay(output, calledKeys);
+      }
     }
     return;
   }
@@ -262,20 +268,33 @@ function processLine(lineText: string) {
   let match = lineText.match(regex);
   let message = match ? match[1] : "";
 
-  console.log("Message = ", message)
+  console.log("Message = ", message);
 
-  console.log("Should append?", message.trim().startsWith("+"))
+  console.log("Should append?", message.trim().startsWith("+"));
   let shouldAppend = message.trim().startsWith("+");
   if (shouldAppend) {
     lineText = lineText.replace(/\+/, "");
     console.log("Appending keys from line:", lineText);
   }
 
+  // Detect all keys in the message
   let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
-  console.log('Keys called = ', keysCalled)
+  console.log("Keys called = ", keysCalled);
+
+  // Remove called keys from the location
+  // Ensures keys wont be used for the location
+  keysCalled.forEach((key) => {
+    let keyRegex = new RegExp(`\\b${key}\\b`, "gi");
+    let originalMessage = message;
+    message = message.replace(keyRegex, "");
+    console.log(
+      `Removing keys '${key}': Original:'${originalMessage}' New: '${message}'`
+    );
+  });
 
   if (keysCalled.length > 0) {
     // Filter out used keys
+    console.log("Used keys:", usedKeys);
     keysCalled = keysCalled.filter((key) => !usedKeys.hasOwnProperty(key));
 
     if (keysCalled.length > 0) {
@@ -283,12 +302,6 @@ function processLine(lineText: string) {
         console.log("Attempting to append keys:", keysCalled);
         appendKeysToPreviousCall(caller, keysCalled);
       } else {
-        // Remove called keys from the location
-        keysCalled.forEach((key) => {
-          let keyRegex = new RegExp(`\\b${key}\\b`, "gi");
-          message = message.replace(keyRegex, "");
-        });
-
         // Trim to get location
         let location = message.trim();
 
