@@ -9202,7 +9202,7 @@ function generateKeyPermutations(colours, shapes) {
     return permutations;
 }
 var keyPermutations = generateKeyPermutations(colours, shapes);
-// Additional calls
+// Add additional calls
 keyPermutations["dead"] = "Dead";
 keyPermutations["boss"] = "Boss";
 console.log("Key Permutations:", keyPermutations);
@@ -9215,10 +9215,24 @@ var keyCallerUsernames = ["Fe Nechs", "Fe Conor", "Bazz21", "Lidica"];
 var foundKeys = [];
 var usedKeys = [];
 var calledKeys = {};
-var callLocations = {};
 var ignoredMessages = ["thbbbbbt", "logged"];
+var resetMessages = ["welcome to daemonheim!", "==="];
 var lastFloorStartTime = 0;
+var latestProcessedTimestamp = new Date(0);
 var callerPriority = __spreadArray([], keyCallerUsernames, true);
+function parseTimestamp(line) {
+    var match = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\]/);
+    console.log("Timestamp detected:", match);
+    if (match) {
+        var hours = match[1], minutes = match[2], seconds = match[3];
+        var now = new Date();
+        console.log("Current date", now);
+        var parsedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), parseInt(seconds));
+        console.log("Parsed date:", parsedDate);
+        return parsedDate;
+    }
+    return null;
+}
 function setCallerPriority() {
     var select = document.getElementById("callerPriority");
     if (select) {
@@ -9245,13 +9259,12 @@ function resetDaemonheimState() {
     var currentTime = Date.now();
     var cooldownPeriod = 30000;
     if (currentTime - lastFloorStartTime < cooldownPeriod) {
-        console.log("Cooldown active. Skipping reset.");
+        console.log("Reset cooldown active. Skipping reset.");
         return;
     }
     foundKeys = [];
     usedKeys = [];
     calledKeys = {};
-    callLocations = {};
     lastFloorStartTime = currentTime;
     updateDisplay(output, calledKeys);
 }
@@ -9270,6 +9283,20 @@ function removeKeysFromCalledKeys(keysToRemove) {
     updateDisplay(output, calledKeys);
 }
 function processLine(lineText) {
+    // Skip this line if its not more recent than the last processed timestamp
+    var timestamp = parseTimestamp(lineText);
+    console.log("Timestamp detected:", timestamp, "Last process timestamp:", latestProcessedTimestamp);
+    if (!timestamp || timestamp <= latestProcessedTimestamp) {
+        console.log("Skipping line because of timestamp");
+        return;
+    }
+    if (resetMessages.some(function (ignored) {
+        return lineText.includes(ignored.toLocaleLowerCase());
+    })) {
+        console.log("Reset message detected, resetting state");
+        resetDaemonheimState();
+        latestProcessedTimestamp = timestamp;
+    }
     if (ignoredMessages.some(function (ignored) {
         return lineText.includes(ignored.toLocaleLowerCase());
     })) {
@@ -9350,6 +9377,7 @@ function processLine(lineText) {
                 }
             }
         }
+        latestProcessedTimestamp = timestamp;
         updateDisplay(output, calledKeys);
     }
 }
@@ -9372,29 +9400,15 @@ function readChatbox() {
         if (!lines) {
             return;
         }
-        // Resets on new floor message or 3 ='s in a row
+        // Resets on new floor message or >=3 ='s in a row
         // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
         // So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
         // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
-        var resetIndex = lines.findIndex(function (line) {
-            return line.text.toLowerCase().includes("welcome to daemonheim");
-        });
-        if (resetIndex !== -1) {
-            // If "Welcome to Daemonheim" is found, only process lines from that point onwards
-            lines = lines.slice(resetIndex + 1);
-            resetDaemonheimState();
-        }
         for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
             var line = lines_1[_i];
             console.log("detected text", line.text);
             var lineText = line.text.toLowerCase();
-            // Can also reset with ='s
-            if (/={3,}/.test(lineText)) {
-                resetDaemonheimState();
-            }
-            else {
-                processLine(lineText);
-            }
+            processLine(lineText);
         }
     }, alt1.captureInterval);
 }

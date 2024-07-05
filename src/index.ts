@@ -79,7 +79,7 @@ function generateKeyPermutations(colours: Colours, shapes: Shapes) {
 }
 
 const keyPermutations = generateKeyPermutations(colours, shapes);
-// Additional calls
+// Add additional calls
 keyPermutations["dead"] = "Dead";
 keyPermutations["boss"] = "Boss";
 
@@ -98,11 +98,35 @@ let keyCallerUsernames = ["Fe Nechs", "Fe Conor", "Bazz21", "Lidica"];
 let foundKeys = [];
 let usedKeys = [];
 let calledKeys = {};
-let callLocations = {};
 const ignoredMessages = ["thbbbbbt", "logged"];
+const resetMessages = ["welcome to daemonheim!", "==="];
 let lastFloorStartTime = 0;
-
+let latestProcessedTimestamp = new Date(0);
 let callerPriority: string[] = [...keyCallerUsernames];
+
+function parseTimestamp(line: string): Date | null {
+  const match = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\]/);
+  console.log("Timestamp detected:", match);
+
+  if (match) {
+    const [, hours, minutes, seconds] = match;
+    const now = new Date();
+    console.log("Current date", now);
+
+    const parsedDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    );
+
+    console.log("Parsed date:", parsedDate);
+    return parsedDate;
+  }
+  return null;
+}
 
 function setCallerPriority() {
   const select = document.getElementById("callerPriority") as HTMLSelectElement;
@@ -133,14 +157,13 @@ function resetDaemonheimState() {
   const cooldownPeriod = 30000;
 
   if (currentTime - lastFloorStartTime < cooldownPeriod) {
-    console.log("Cooldown active. Skipping reset.");
+    console.log("Reset cooldown active. Skipping reset.");
     return;
   }
 
   foundKeys = [];
   usedKeys = [];
   calledKeys = {};
-  callLocations = {};
   lastFloorStartTime = currentTime;
   updateDisplay(output, calledKeys);
 }
@@ -165,6 +188,30 @@ function removeKeysFromCalledKeys(keysToRemove) {
 }
 
 function processLine(lineText: string) {
+  // Skip this line if its not more recent than the last processed timestamp
+  const timestamp = parseTimestamp(lineText);
+  console.log(
+    "Timestamp detected:",
+    timestamp,
+    "Last process timestamp:",
+    latestProcessedTimestamp
+  );
+
+  if (!timestamp || timestamp <= latestProcessedTimestamp) {
+    console.log("Skipping line because of timestamp");
+    return;
+  }
+
+  if (
+    resetMessages.some((ignored) =>
+      lineText.includes(ignored.toLocaleLowerCase())
+    )
+  ) {
+    console.log("Reset message detected, resetting state");
+    resetDaemonheimState();
+	latestProcessedTimestamp = timestamp  
+}
+
   if (
     ignoredMessages.some((ignored) =>
       lineText.includes(ignored.toLocaleLowerCase())
@@ -258,6 +305,7 @@ function processLine(lineText: string) {
         }
       }
     }
+    latestProcessedTimestamp = timestamp;
     updateDisplay(output, calledKeys);
   }
 }
@@ -283,31 +331,15 @@ function readChatbox() {
       return;
     }
 
-    // Resets on new floor message or 3 ='s in a row
+    // Resets on new floor message or >=3 ='s in a row
     // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
     // So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
     // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
 
-    let resetIndex = lines.findIndex((line) =>
-      line.text.toLowerCase().includes("welcome to daemonheim")
-    );
-
-    if (resetIndex !== -1) {
-      // If "Welcome to Daemonheim" is found, only process lines from that point onwards
-      lines = lines.slice(resetIndex + 1);
-      resetDaemonheimState();
-    }
-
     for (let line of lines) {
       console.log("detected text", line.text);
       let lineText = line.text.toLowerCase();
-
-      // Can also reset with ='s
-      if (/={3,}/.test(lineText)) {
-        resetDaemonheimState();
-      } else {
-        processLine(lineText);
-      }
+      processLine(lineText);
     }
   }, alt1.captureInterval);
 }
