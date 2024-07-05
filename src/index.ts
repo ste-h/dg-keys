@@ -106,7 +106,7 @@ let callerPriority: string[] = [...keyCallerUsernames];
 
 function parseTimestamp(line: string): Date | null {
   const match = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\]/);
-  console.log("Timestamp detected:", match);
+//   console.log("Timestamp detected:", match);
 
   if (match) {
     const [, hours, minutes, seconds] = match;
@@ -122,7 +122,7 @@ function parseTimestamp(line: string): Date | null {
       parseInt(seconds)
     );
 
-    console.log("Parsed date:", parsedDate);
+    // console.log("Parsed date:", parsedDate);
     return parsedDate;
   }
   return null;
@@ -188,6 +188,9 @@ function removeKeysFromCalledKeys(keysToRemove) {
 }
 
 function processLine(lineText: string) {
+  // Replace multiple spaces with singular spaces
+  //   lineText = lineText.replace(/\s+/g, " ");
+
   // Skip this line if its not more recent than the last processed timestamp
   const timestamp = parseTimestamp(lineText);
   console.log(
@@ -202,15 +205,14 @@ function processLine(lineText: string) {
     return;
   }
 
+  // Reset state and update the timestamp when a 'reset' message is detected ie. Welcome to Daemonheim!
   if (
-    resetMessages.some((ignored) =>
-      lineText.includes(ignored.toLocaleLowerCase())
-    )
+    resetMessages.some((reset) => lineText.includes(reset.toLocaleLowerCase()))
   ) {
     console.log("Reset message detected, resetting state");
     resetDaemonheimState();
-	latestProcessedTimestamp = timestamp  
-}
+    latestProcessedTimestamp = timestamp;
+  }
 
   if (
     ignoredMessages.some((ignored) =>
@@ -258,56 +260,68 @@ function processLine(lineText: string) {
   // Matches everything after username
   let regex = new RegExp(`${caller.toLocaleLowerCase()}:(.*)`, "i");
   let match = lineText.match(regex);
-  let message = match ? match[1].trim() : "";
+  let message = match ? match[1] : "";
+
+  console.log("Message = ", message)
+
+  console.log("Should append?", message.trim().startsWith("+"))
+  let shouldAppend = message.trim().startsWith("+");
+  if (shouldAppend) {
+    lineText = lineText.replace(/\+/, "");
+    console.log("Appending keys from line:", lineText);
+  }
 
   let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
+  console.log('Keys called = ', keysCalled)
 
   if (keysCalled.length > 0) {
-    // Filter used keys
-    let keysCalled = keys.filter((key) => lineText.split(/\s+/).includes(key));
+    // Filter out used keys
+    keysCalled = keysCalled.filter((key) => !usedKeys.hasOwnProperty(key));
 
     if (keysCalled.length > 0) {
-      // Filter out keys that are in usedKeys
-      keysCalled = keysCalled.filter((key) => !usedKeys.hasOwnProperty(key));
+      if (shouldAppend) {
+        console.log("Attempting to append keys:", keysCalled);
+        appendKeysToPreviousCall(caller, keysCalled);
+      } else {
+        // Remove called keys from the location
+        keysCalled.forEach((key) => {
+          let keyRegex = new RegExp(`\\b${key}\\b`, "gi");
+          message = message.replace(keyRegex, "");
+        });
 
-      if (keysCalled.length > 0) {
-        // Only proceed if there are still keys after filtering
-        // Append keys to the previous call
-        if (message.startsWith("+")) {
-          appendKeysToPreviousCall(caller, keysCalled);
-        } else {
-          // Remove called keys from the location
-          keysCalled.forEach((key) => {
-            let keyRegex = new RegExp(key, "gi");
-            message = message.replace(keyRegex, "").trim();
-          });
+        // Trim to get location
+        let location = message.trim();
 
-          if (!calledKeys[caller]) {
-            calledKeys[caller] = [];
-          }
+        if (!calledKeys[caller]) {
+          calledKeys[caller] = [];
+        }
 
-          // Don't add duplicates
-          let currentTime = Date.now();
-          if (currentTime > lastFloorStartTime) {
-            let existingEntry = calledKeys[caller].find(
-              (entry) =>
-                entry.location === message &&
-                JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
-            );
-            if (!existingEntry) {
-              calledKeys[caller].push({
-                location: message,
-                keys: keysCalled,
-                timestamp: currentTime,
-              });
-            }
+        // Don't add duplicates
+        let currentTime = Date.now();
+        if (currentTime > lastFloorStartTime) {
+          let existingEntry = calledKeys[caller].find(
+            (entry) =>
+              entry.location === message &&
+              JSON.stringify(entry.keys) === JSON.stringify(keysCalled)
+          );
+          if (!existingEntry) {
+            calledKeys[caller].push({
+              location: message,
+              keys: keysCalled,
+              timestamp: currentTime,
+            });
           }
         }
       }
+    } else {
+      console.log("No valid keys to process after filtering used keys");
     }
-    latestProcessedTimestamp = timestamp;
-    updateDisplay(output, calledKeys);
+  } else {
+    console.log("No keys detected in the message");
   }
+
+  latestProcessedTimestamp = timestamp;
+  updateDisplay(output, calledKeys);
 }
 
 function readChatbox() {
@@ -330,11 +344,6 @@ function readChatbox() {
     if (!lines) {
       return;
     }
-
-    // Resets on new floor message or >=3 ='s in a row
-    // Sometimes alt1 will re-read and process the entire chat while missing the 'Welcome to Daemonheim' message
-    // So sometimes old keys before that message may be seen as new calls. Typically only messages sent after the reset message will be read
-    // There's a 30sec cooldown on resetting, so if you play with a reasonably sized chatbox the message should be spammed within in that period
 
     for (let line of lines) {
       console.log("detected text", line.text);
