@@ -52,15 +52,16 @@ const shapes: Shapes = {
 };
 
 function capitalizeWords(str) {
-  if (str.trim() === "") {
-    return "";
-  }
+  if (!str.trim()) return "";
 
-  const words = str.split(" ").filter((word) => word !== "");
-  for (let i = 0; i < words.length; i++) {
-    words[i] = words[i][0].toUpperCase() + words[i].slice(1);
-  }
-  return words.join(" ");
+  const capitalized = str
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
+
+  console.log("Capitalized", str, "as", capitalized);
+  return capitalized;
 }
 
 function generateKeyPermutations(colours: Colours, shapes: Shapes) {
@@ -78,15 +79,16 @@ function generateKeyPermutations(colours: Colours, shapes: Shapes) {
 }
 
 const keyPermutations = generateKeyPermutations(colours, shapes);
+// Additional calls
 keyPermutations["dead"] = "Dead";
 keyPermutations["boss"] = "Boss";
 
-console.log(keyPermutations);
+console.log("Key Permutations:", keyPermutations);
 
 const reader = new ChatBoxReader();
 
 reader.readargs.colors.push(
-  a1lib.mixColor(165, 65, 20) // Found/used keys color
+  a1lib.mixColor(165, 65, 20) // Add the found / used keys color
 );
 
 const keys = Object.keys(keyPermutations);

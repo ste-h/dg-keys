@@ -9180,14 +9180,15 @@ var shapes = {
     re: "Rectangle",
 };
 function capitalizeWords(str) {
-    if (str.trim() === "") {
+    if (!str.trim())
         return "";
-    }
-    var words = str.split(" ").filter(function (word) { return word !== ""; });
-    for (var i = 0; i < words.length; i++) {
-        words[i] = words[i][0].toUpperCase() + words[i].slice(1);
-    }
-    return words.join(" ");
+    var capitalized = str
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(function (word) { return word[0].toUpperCase() + word.slice(1); })
+        .join(" ");
+    console.log("Capitalized", str, "as", capitalized);
+    return capitalized;
 }
 function generateKeyPermutations(colours, shapes) {
     var permutations = {};
@@ -9201,11 +9202,12 @@ function generateKeyPermutations(colours, shapes) {
     return permutations;
 }
 var keyPermutations = generateKeyPermutations(colours, shapes);
+// Additional calls
 keyPermutations["dead"] = "Dead";
 keyPermutations["boss"] = "Boss";
-console.log(keyPermutations);
+console.log("Key Permutations:", keyPermutations);
 var reader = new (alt1_chatbox__WEBPACK_IMPORTED_MODULE_4___default())();
-reader.readargs.colors.push(alt1__WEBPACK_IMPORTED_MODULE_5__.mixColor(165, 65, 20) // Found/used keys color
+reader.readargs.colors.push(alt1__WEBPACK_IMPORTED_MODULE_5__.mixColor(165, 65, 20) // Add the found / used keys color
 );
 var keys = Object.keys(keyPermutations);
 var keysFullNames = Object.values(keyPermutations);
