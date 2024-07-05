@@ -9284,6 +9284,7 @@ function removeKeysFromCalledKeys(keysToRemove) {
 }
 function processLine(lineText) {
     // Replace multiple spaces with singular spaces
+    // Alt1 doesnt really detect text after multiple spaces, no point processing this early
     //   lineText = lineText.replace(/\s+/g, " ");
     // Skip this line if its not more recent than the last processed timestamp
     var timestamp = parseTimestamp(lineText);
@@ -9297,13 +9298,16 @@ function processLine(lineText) {
         console.log("Reset message detected, resetting state");
         resetDaemonheimState();
         latestProcessedTimestamp = timestamp;
-        console.log('New latest timestamp:', latestProcessedTimestamp);
+        console.log("New latest timestamp:", latestProcessedTimestamp);
     }
     if (ignoredMessages.some(function (ignored) {
         return lineText.includes(ignored.toLocaleLowerCase());
     })) {
         return;
     }
+    // Remove single quotes
+    lineText = lineText.replace(/'/g, "").toLowerCase();
+    console.log("Single quotes removed", lineText);
     if (lineText.includes("found a key")) {
         var foundKey = keysFullNames.find(function (key) {
             return lineText.includes(key.toLowerCase());
@@ -9314,7 +9318,7 @@ function processLine(lineText) {
                 foundKeys[k] = keyPermutations[k];
             });
             updateDisplay(output, calledKeys);
-            console.log('Found Keys:', foundKeys);
+            console.log("Found Keys:", foundKeys);
         }
         return;
     }
@@ -9330,7 +9334,7 @@ function processLine(lineText) {
                 });
                 removeKeysFromCalledKeys(keys_1);
                 updateDisplay(output, calledKeys);
-                console.log('Used Keys:', usedKeys);
+                console.log("Used Keys:", usedKeys);
             }
         }
         return;
