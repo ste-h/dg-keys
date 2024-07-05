@@ -362,7 +362,7 @@ function updateDisplay(container, calledKeys) {
               if (key === "dead") {
                 imgPath = "./key_images/Skull.png";
               }
-              if (key === "boss") {
+              else if (key === "boss") {
                 imgPath = "./key_images/Boss.png";
               } else {
                 imgPath = `./key_images/${keyPermutations[key].replace(
