@@ -21,7 +21,7 @@ body {
 }
 
 .caller-name {
-  margin-bottom: 6px; 
+  margin-bottom: 6px;
   font-size: 0.8em;
   color: #7a7a78;
 }
@@ -80,9 +80,6 @@ body {
 }
 
 .minimal-dropdown {
-  position: fixed;
-  top: 0px;
-  left: 0px;
   font-size: 10px;
   padding: 2px;
   background-color: #101313;
@@ -98,4 +95,16 @@ body {
 
 .caller-section:first-child {
   margin-top: 18px;
+}
+
+.label-minimal-dropdown {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-right: 10px;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.label-minimal-dropdown:hover {
+  opacity: 1;
 }
